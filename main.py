@@ -21,34 +21,34 @@ from myserver import server_on
 GUILD_ID = 1448273040961048618  # กำหนด ID เซิร์ฟเวอร์หลัก
 
 PHONE_NUMBER = "0619612338"  # เบอร์ TrueMoney (ซองอั่งเปา)
-PROMPTPAY_NUMBER = "0619612338"  # เบอร์พร้อมเพย์
-TOPUP_DASHBOARD_CHANNEL_ID = 1531619438988890222
+PROMPTPAY_NUMBER = "0619612338"  # เบอร์พร้อมเพย์[cite: 21]
+TOPUP_DASHBOARD_CHANNEL_ID = 1531619438988890222[cite: 21]
 
-CONTROL_ROOM_CHANNEL_ID = 1531353093935993001  # ห้องแผงควบคุมปุ่มแอดมิน
-ADMIN_CMD_CHANNEL_ID = 1448273041963618386  # ห้องพิมพ์คำสั่งเฉพาะแอดมิน
-RESET_KEY_CHANNEL_ID = 1531390970304663602  # ห้องสำหรับให้ลูกค้ารีเซ็ตคีย์ตัวเอง
-LICENSE_LIST_CHANNEL_ID = 1531328817765941460  # ห้องแสดงตารางสถานะคีย์
-ACTIVE_HWID_CHANNEL_ID = 1531328835969355878  # ห้องแสดงตาราง HWID ที่ใช้งาน
-LOG_CHANNEL_ID = 1531328859763507280  # ห้องแจ้งเตือน Log ระบบ
-REACTION_LOG_CHANNEL_ID = 1531615505960669235  # ห้องแจ้งคนรับยศผ่านปุ่ม
-REACTION_ROLE_CHANNEL_ID = 1531630494259740814
+CONTROL_ROOM_CHANNEL_ID = 1531353093935993001  # ห้องแผงควบคุมปุ่มแอดมิน[cite: 21]
+ADMIN_CMD_CHANNEL_ID = 1448273041963618386  # ห้องพิมพ์คำสั่งเฉพาะแอดมิน[cite: 21]
+RESET_KEY_CHANNEL_ID = 1531390970304663602  # ห้องสำหรับให้ลูกค้ารีเซ็ตคีย์ตัวเอง[cite: 21]
+LICENSE_LIST_CHANNEL_ID = 1531328817765941460  # ห้องแสดงตารางสถานะคีย์[cite: 21]
+ACTIVE_HWID_CHANNEL_ID = 1531328835969355878  # ห้องแสดงตาราง HWID ที่ใช้งาน[cite: 21]
+LOG_CHANNEL_ID = 1531328859763507280  # ห้องแจ้งเตือน Log ระบบ[cite: 21]
+REACTION_LOG_CHANNEL_ID = 1531615505960669235  # ห้องแจ้งคนรับยศผ่านปุ่ม[cite: 21]
+REACTION_ROLE_CHANNEL_ID = 1531630494259740814[cite: 21]
 
-GAME_CHANNEL_ID = 1531651090272227328  # ห้องสำหรับเล่นเกมขุดแร่และแลกคีย์
+GAME_CHANNEL_ID = 1531651090272227328  # ห้องสำหรับเล่นเกมขุดแร่และแลกคีย์[cite: 21]
 
 ALLOWED_ROLE_IDS = [
     1448273316610838680
-]  # ยศแอดมิน (จัดการระบบหลังบ้านทั้งหมด)
-CUSTOMER_ROLE_ID = 1531392425656848504  # ยศลูกค้า
+]  # ยศแอดมิน (จัดการระบบหลังบ้านทั้งหมด)[cite: 21]
+CUSTOMER_ROLE_ID = 1531392425656848504  # ยศลูกค้า[cite: 21]
 
-GIF_BANNER_URL = "https://cdn.discordapp.com/attachments/1531353093935993001/1531357566385389648/From-Klickpin.com-Sleep-Routine-Tips-73-Ideas-to-Copy-pin-id-1052505375422933587.gif?ex=6a68eb5f&is=6a6799df&hm=013fbaa1f8e97904c5069160e861992c6948b6778068c5c6d0f0f090f17206b3&"
+GIF_BANNER_URL = "https://cdn.discordapp.com/attachments/1531353093935993001/1531357566385389648/From-Klickpin.com-Sleep-Routine-Tips-73-Ideas-to-Copy-pin-id-1052505375422933587.gif?ex=6a68eb5f&is=6a6799df&hm=013fbaa1f8e97904c5069160e861992c6948b6778068c5c6d0f0f090f17206b3&"[cite: 21]
 
 DB_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "bot_licenses.db"
-)
-TOPUP_DB_FILE = "database.json"
-USERDATA_FILE = "userdata.json"
+)[cite: 21]
+TOPUP_DB_FILE = "database.json"[cite: 21]
+USERDATA_FILE = "userdata.json"[cite: 21]
 
-COOLDOWN_TIME = 10
+COOLDOWN_TIME = 10[cite: 21]
 ORES_CONFIG = [
     {
         "name": "💎 Diamond",
@@ -78,9 +78,9 @@ ORES_CONFIG = [
         "min_size": 1,
         "max_size": 5,
     },
-]
+][cite: 21]
 
-intents = discord.Intents.all()
+intents = discord.Intents.all()[cite: 21]
 
 
 def is_admin_or_has_role(member: discord.Member) -> bool:
@@ -669,7 +669,7 @@ async def setup_game_panel():
     print(f"Error setting up game panel: {e}")
 
 
-@bot.slash_command(name="mining", description="ขุดเหมืองเพื่อหาแร่สะสมพ้อยต์")
+@bot.tree.command(name="mining", description="ขุดเหมืองเพื่อหาแร่สะสมพ้อยต์")
 async def mining(interaction: discord.Interaction):
   if not check_game_channel(interaction):
     await interaction.response.send_message(
@@ -1599,7 +1599,7 @@ class ControlPanelView(discord.ui.View):
 # ==========================================
 # ⚡ [Slash Command สำหรับรีเซ็ต HWID]
 # ==========================================
-@bot.slash_command(
+@bot.tree.command(
     name="reset_hwid", description="รีเซ็ต HWID ของคีย์ตัวเอง (จำกัด 2 รอบต่อวัน)"
 )
 async def reset_hwid(interaction: discord.Interaction, license_key: str):
