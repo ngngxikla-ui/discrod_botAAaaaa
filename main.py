@@ -84,6 +84,8 @@ intents = discord.Intents.all()
 
 
 def is_admin_or_has_role(member: discord.Member) -> bool:
+  if not member:
+    return False
   if member.guild_permissions.administrator:
     return True
   return any(role.id in ALLOWED_ROLE_IDS for role in member.roles)
@@ -140,31 +142,37 @@ init_db()
 def load_topup_db():
   if not os.path.exists(TOPUP_DB_FILE):
     return {}
-  with open(TOPUP_DB_FILE, "r", encoding="utf-8") as f:
-    try:
+  try:
+    with open(TOPUP_DB_FILE, "r", encoding="utf-8") as f:
       return json.load(f)
-    except Exception:
-      return {}
+  except Exception:
+    return {}
 
 
 def save_topup_db(db):
-  with open(TOPUP_DB_FILE, "w", encoding="utf-8") as f:
-    json.dump(db, f, indent=4, ensure_ascii=False)
+  try:
+    with open(TOPUP_DB_FILE, "w", encoding="utf-8") as f:
+      json.dump(db, f, indent=4, ensure_ascii=False)
+  except Exception as e:
+    print(f"Error saving topup db: {e}")
 
 
 def load_user_data():
   if os.path.exists(USERDATA_FILE):
-    with open(USERDATA_FILE, "r", encoding="utf-8") as f:
-      try:
+    try:
+      with open(USERDATA_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
-      except Exception:
-        return {}
+    except Exception:
+      return {}
   return {}
 
 
 def save_user_data(data):
-  with open(USERDATA_FILE, "w", encoding="utf-8") as f:
-    json.dump(data, f, indent=2, ensure_ascii=False)
+  try:
+    with open(USERDATA_FILE, "w", encoding="utf-8") as f:
+      json.dump(data, f, indent=2, ensure_ascii=False)
+  except Exception as e:
+    print(f"Error saving user data: {e}")
 
 
 user_data = load_user_data()
@@ -681,6 +689,11 @@ async def mining(interaction: discord.Interaction):
     )
     return
   ore = get_random_ore()
+  if not ore:
+    await interaction.response.send_message(
+        "❌ ขุดไม่เจออะไรเลย ลองใหม่อีกครั้ง!", ephemeral=True
+    )
+    return
   user_data[user_id]["ores"].append(ore)
   user_data[user_id]["last_mine"] = now
   save_user_data(user_data)
@@ -1702,10 +1715,16 @@ class RoleButtonView(discord.ui.View):
       return
 
     if role in member.roles:
-      await member.remove_roles(role, reason="กดปุ่มยกเลิกรับยศ")
-      await interaction.response.send_message(
-          f"❌ คุณได้ทำการถอด {role.mention} ออกเรียบร้อยแล้ว", ephemeral=True
-      )
+      try:
+        await member.remove_roles(role, reason="กดปุ่มยกเลิกรับยศ")
+        await interaction.response.send_message(
+            f"❌ คุณได้ทำการถอด {role.mention} ออกเรียบร้อยแล้ว", ephemeral=True
+        )
+      except Exception:
+        await interaction.response.send_message(
+            "❌ บอทไม่สามารถจัดการยศนี้ได้ (ตรวจสอบสิทธิ์ Manage Roles)",
+            ephemeral=True,
+        )
     else:
       try:
         await member.add_roles(role, reason="กดปุ่มรับยศ")
@@ -1720,7 +1739,8 @@ class RoleButtonView(discord.ui.View):
               color=discord.Color.blue(),
               timestamp=datetime.now(),
           )
-          embed.set_thumbnail(url=member.display_avatar.url)
+          if member.display_avatar:
+            embed.set_thumbnail(url=member.display_avatar.url)
           embed.add_field(
               name="`ผู้ใช้`", value=f"{member.mention} ({member})", inline=False
           )
@@ -1869,12 +1889,15 @@ async def update_dashboards():
           elif not expiry_str or status == "Unused":
             t_left = f"⏳ Unused ({days} วัน)"
           else:
-            expiry_dt = datetime.strptime(expiry_str, "%Y-%m-%d %H:%M:%S")
-            rem = expiry_dt - now
-            if rem.total_seconds() <= 0:
-              t_left = "❌ Expired"
-            else:
-              t_left = f"⏱️ เหลือ {rem.days} วัน {rem.seconds // 3600} ชม."
+            try:
+              expiry_dt = datetime.strptime(expiry_str, "%Y-%m-%d %H:%M:%S")
+              rem = expiry_dt - now
+              if rem.total_seconds() <= 0:
+                t_left = "❌ Expired"
+              else:
+                t_left = f"⏱️ เหลือ {rem.days} วัน {rem.seconds // 3600} ชม."
+            except Exception:
+              t_left = "⏱️ Active"
 
           embed_l.add_field(
               name=f"🔑 {key}",
@@ -2044,5 +2067,7 @@ if __name__ == "__main__":
   server_on()
 
   token = os.getenv("TOKEN")
-
-  bot.run(token)
+  if token:
+    bot.run(token)
+  else:
+    print("❌ Error: TOKEN environment variable not found!")
