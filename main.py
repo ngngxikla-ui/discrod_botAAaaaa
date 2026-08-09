@@ -18,7 +18,7 @@ from myserver import server_on
 # ⚙️ [ตั้งค่าคอนฟิกหลักและการแยก ID แต่ละห้อง]
 # ==========================================
 
-GUILD_ID = 1535803463252840508  # กำหนด ID เซิร์ฟเวอร์หลัก
+GUILD_ID = 1448273040961048618  # กำหนด ID เซิร์ฟเวอร์หลัก
 
 PHONE_NUMBER = "0619612338"  # เบอร์ TrueMoney (ซองอั่งเปา)
 PROMPTPAY_NUMBER = "0619612338"  # เบอร์พร้อมเพย์
@@ -37,14 +37,14 @@ LOG_CHANNEL_ID = 1531328859763507280  # ห้องแจ้งเตือน 
 REACTION_LOG_CHANNEL_ID = 1531615505960669235  # ห้องแจ้งคนรับยศผ่านปุ่ม
 REACTION_ROLE_CHANNEL_ID = 1531630494259740814
 
-GAME_CHANNEL_ID = 1531651090272227328  # ห้องสำหรับเล่นเกมขุดแร่และแลกคีย์
+GAME_CHANNEL_ID = 1535809330081964042  # ห้องสำหรับเล่นเกมขุดแร่และแลกคีย์
 
 ALLOWED_ROLE_IDS = [
-    1448273316610838680
+    1533642657413464247
 ]  # ยศแอดมิน (จัดการระบบหลังบ้านทั้งหมด)
-CUSTOMER_ROLE_ID = 1531392425656848504  # ยศลูกค้า
+CUSTOMER_ROLE_ID = 1533641533721546814  # ยศลูกค้า
 
-GIF_BANNER_URL = "https://cdn.discordapp.com/attachments/1531353093935993001/1531357566385389648/From-Klickpin.com-Sleep-Routine-Tips-73-Ideas-to-Copy-pin-id-1052505375422933587.gif?ex=6a68eb5f&is=6a6799df&hm=013fbaa1f8e97904c5069160e861992c6948b6778068c5c6d0f0f090f17206b3&"
+GIF_BANNER_URL = "https://cdn.discordapp.com/attachments/1535788924885143673/1535809784383799326/standard.gif?ex=6a791dd2&is=6a77cc52&hm=9bfe0b03b3a7880ac9e3d20419230466975e8b55acd99d14d00ae0bbd93f14e3&"
 
 DB_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "bot_licenses.db"
