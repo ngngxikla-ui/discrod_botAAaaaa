@@ -28,8 +28,9 @@ CONTROL_ROOM_CHANNEL_ID = 1531353093935993001  # ห้องแผงควบ�
 ADMIN_CMD_CHANNEL_ID = 1448273041963618386  # ห้องพิมพ์คำสั่งเฉพาะแอดมิน
 RESET_KEY_CHANNEL_ID = 1531390970304663602  # ห้องสำหรับให้ลูกค้ารีเซ็ตคีย์ตัวเอง
 LICENSE_LIST_CHANNEL_ID = 1531328817765941460  # ห้องแสดงตารางสถานะคีย์
-ACTIVE_HWID_CHANNEL_ID = 1531328835969355878  # ห้องแสดงตาราง HWID ที่ใช้งาน
-HWID_CHANNEL_ID = 1531328835969355878  # ห้อง @HWID (เพิ่มตามคำขอโดยอ้างอิงจาก Active HWID)
+ACTIVE_HWID_CHANNEL_ID = (
+    1531328835969355878  # ห้องแสดงตาราง HWID ที่ใช้งาน (ดึงจาก Discord)
+)
 LOG_CHANNEL_ID = 1531328859763507280  # ห้องแจ้งเตือน Log ระบบ
 REACTION_LOG_CHANNEL_ID = 1531615505960669235  # ห้องแจ้งคนรับยศผ่านปุ่ม
 REACTION_ROLE_CHANNEL_ID = 1531630494259740814
@@ -220,13 +221,14 @@ app = Flask(__name__)
 def verify():
   data = request.json or request.form
   key = data.get("key")
-  hwid = data.get("hwid")
+  # ปรับให้รองรับการดึง HWID เชื่อมโยงกับ Discord ID หรือค่าที่ส่งมาตรงๆ[cite: 21]
+  hwid = data.get("hwid") or data.get("discord_id")
   action = data.get("action", "verify")
 
   if key:
     key = key.replace("\u200b", "").replace("\ufeff", "").strip()
   if hwid:
-    hwid = hwid.replace("\u200b", "").replace("\ufeff", "").strip()
+    hwid = str(hwid).replace("\u200b", "").replace("\ufeff", "").strip()
 
   conn = sqlite3.connect(DB_PATH, check_same_thread=False)
   cursor = conn.cursor()
@@ -235,8 +237,8 @@ def verify():
     cursor.execute("SELECT duration_days FROM licenses WHERE key = ?", (key,))
     conn.close()
     send_log(
-        f"🔴 **[Client Log] ลูกค้าปิดโปรแกรม**\n🔑 คีย์: `{key}`\n💻 HWID:"
-        f" `{hwid}`"
+        f"🔴 **[Client Log] ลูกค้าปิดโปรแกรม**\n🔑 คีย์: `{key}`\n💻 HWID"
+        f" (Discord-linked): `{hwid}`"
     )
     if bot.is_ready():
       asyncio.run_coroutine_threadsafe(update_dashboards(), bot.loop)
@@ -967,7 +969,7 @@ class CheckKeyModal(discord.ui.Modal):
     k, days, exp, hwid, status = row
     text = (
         f"🔑 **รายละเอียดคีย์:** `{k}`\n• สถานะ: `{status}`\n• ระยะเวลา: `{days}`"
-        f" วัน\n• วันหมดอายุ: `{exp or 'ยังไม่เปิดใช้งาน'}`\n• HWID:"
+        f" วัน\n• วันหมดอายุ: `{exp or 'ยังไม่เปิดใช้งาน'}`\n• HWID (Discord-linked):"
         f" `{hwid or 'ยังไม่ผูก'}`"
     )
     await interaction.followup.send(text, ephemeral=True)
@@ -978,7 +980,7 @@ class CheckHWIDModal(discord.ui.Modal):
   def __init__(self):
     super().__init__(title="💻 เช็คข้อมูล HWID")
     self.hwid_input = discord.ui.TextInput(
-        label="พิมพ์ HWID", placeholder="HWID-...", required=True
+        label="พิมพ์ HWID / Discord ID", placeholder="HWID-...", required=True
     )
     self.add_item(self.hwid_input)
 
@@ -1000,7 +1002,7 @@ class CheckHWIDModal(discord.ui.Modal):
     if not rows:
       await interaction.followup.send("❌ ไม่พบข้อมูล HWID นี้", ephemeral=True)
       return
-    msg = f"💻 **HWID:** `{target}`\nผูกกับคีย์:\n"
+    msg = f"💻 **HWID / Discord ID:** `{target}`\nผูกกับคีย์:\n"
     for r in rows:
       msg += f"• คีย์: `{r[0]}` (สถานะ: `{r[1]}`)\n"
     await interaction.followup.send(msg, ephemeral=True)
@@ -1410,7 +1412,7 @@ class ControlPanelView(discord.ui.View):
     cursor.execute("SELECT key, hwid FROM licenses WHERE hwid IS NOT NULL")
     rows = cursor.fetchall()
     conn.close()
-    text = "🖥️ **HWID ที่เชื่อมต่ออยู่ทั้งหมด:**\n"
+    text = "🖥️ **HWID (Discord-linked) ที่เชื่อมต่ออยู่ทั้งหมด:**\n"
     for r in rows[:30]:
       text += f"• คีย์ `{r[0]}` ➔ `{r[1]}`\n"
     if not rows:
@@ -1903,7 +1905,7 @@ async def update_dashboards():
           embed_l.add_field(
               name=f"🔑 {key}",
               value=(
-                  f"• สถานะ: `{status}` | {t_left}\n• HWID:"
+                  f"• สถานะ: `{status}` | {t_left}\n• HWID (Discord-linked):"
                   f" `{hwid or 'ยังไม่ผูก'}`"
               ),
               inline=False,
@@ -1948,7 +1950,9 @@ async def update_dashboards():
         for r in active_rows:
           key, days, expiry_str, status, hwid = r
           embed_h.add_field(
-              name=f"💻 HWID: {hwid}", value=f"• คีย์ที่ใช้ผูก: `{key}`", inline=False
+              name=f"💻 HWID (Discord-linked): {hwid}",
+              value=f"• คีย์ที่ใช้ผูก: `{key}`",
+              inline=False,
           )
 
       embed_h.set_image(url=GIF_BANNER_URL)
