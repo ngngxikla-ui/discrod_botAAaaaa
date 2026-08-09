@@ -34,7 +34,7 @@ REACTION_LOG_CHANNEL_ID = 1531615505960669235  # ห้องแจ้งคน�
 REACTION_ROLE_CHANNEL_ID = 1531630494259740814
 
 GAME_CHANNEL_ID = 1531651090272227328  # ห้องสำหรับเล่นเกมขุดแร่และแลกคีย์
-ADD_HWID_CHANNEL_ID = 0  # 🆕 [เพิ่มใหม่] ใส่ ID ห้องสำหรับ Add HWID (ตั้งค่าตามต้องการ)
+ADD_HWID_CHANNEL_ID = 1535803463252840508  # 🆕 [เพิ่มใหม่] ใส่ ID ห้องสำหรับ Add HWID (ตั้งค่าตามต้องการ)
 
 ALLOWED_ROLE_IDS = [
     1448273316610838680
