@@ -17,35 +17,38 @@ from myserver import server_on
 # ==========================================
 # ⚙️ [ตั้งค่าคอนฟิกหลักและการแยก ID แต่ละห้อง]
 # ==========================================
-GUILD_ID = 1448273040961048618  #
 
-PHONE_NUMBER = "0619612338"  #
-PROMPTPAY_NUMBER = "0619612338"  #
-TOPUP_DASHBOARD_CHANNEL_ID = 1531619438988890222  #
+GUILD_ID = 1448273040961048618  # กำหนด ID เซิร์ฟเวอร์หลัก
 
-CONTROL_ROOM_CHANNEL_ID = 1531353093935993001  #
-ADMIN_CMD_CHANNEL_ID = 1448273041963618386  #[cite: 10, 11]
-RESET_KEY_CHANNEL_ID = 1531390970304663602  #[cite: 10, 11]
-LICENSE_LIST_CHANNEL_ID = 1531328817765941460  #[cite: 10, 11]
-ACTIVE_HWID_CHANNEL_ID = 1531328835969355878  #[cite: 10, 11]
-LOG_CHANNEL_ID = 1531328859763507280  #[cite: 10, 11]
-REACTION_LOG_CHANNEL_ID = 1531615505960669235  #[cite: 11]
-REACTION_ROLE_CHANNEL_ID = 1531630494259740814  #[cite: 11]
+PHONE_NUMBER = "0619612338"  # เบอร์ TrueMoney (ซองอั่งเปา)
+PROMPTPAY_NUMBER = "0619612338"  # เบอร์พร้อมเพย์
+TOPUP_DASHBOARD_CHANNEL_ID = 1531619438988890222
 
-GAME_CHANNEL_ID = 1531651090272227328  #[cite: 11]
+CONTROL_ROOM_CHANNEL_ID = 1531353093935993001  # ห้องแผงควบคุมปุ่มแอดมิน
+ADMIN_CMD_CHANNEL_ID = 1448273041963618386  # ห้องพิมพ์คำสั่งเฉพาะแอดมิน
+RESET_KEY_CHANNEL_ID = 1531390970304663602  # ห้องสำหรับให้ลูกค้ารีเซ็ตคีย์ตัวเอง
+LICENSE_LIST_CHANNEL_ID = 1531328817765941460  # ห้องแสดงตารางสถานะคีย์
+ACTIVE_HWID_CHANNEL_ID = 1531328835969355878  # ห้องแสดงตาราง HWID ที่ใช้งาน
+LOG_CHANNEL_ID = 1531328859763507280  # ห้องแจ้งเตือน Log ระบบ
+REACTION_LOG_CHANNEL_ID = 1531615505960669235  # ห้องแจ้งคนรับยศผ่านปุ่ม
+REACTION_ROLE_CHANNEL_ID = 1531630494259740814
 
-ALLOWED_ROLE_IDS = [1448273316610838680, 1531365478109417715]  #[cite: 10, 11]
-CUSTOMER_ROLE_ID = 1531392425656848504  #[cite: 10, 11]
+GAME_CHANNEL_ID = 1531651090272227328  # ห้องสำหรับเล่นเกมขุดแร่และแลกคีย์
 
-GIF_BANNER_URL = "https://cdn.discordapp.com/attachments/1531353093935993001/1531357566385389648/From-Klickpin.com-Sleep-Routine-Tips-73-Ideas-to-Copy-pin-id-1052505375422933587.gif?ex=6a68eb5f&is=6a6799df&hm=013fbaa1f8e97904c5069160e861992c6948b6778068c5c6d0f0f090f17206b3&"  #[cite: 10, 11]
+ALLOWED_ROLE_IDS = [
+    1448273316610838680
+]  # ยศแอดมิน (จัดการระบบหลังบ้านทั้งหมด)
+CUSTOMER_ROLE_ID = 1531392425656848504  # ยศลูกค้า
+
+GIF_BANNER_URL = "https://cdn.discordapp.com/attachments/1531353093935993001/1531357566385389648/From-Klickpin.com-Sleep-Routine-Tips-73-Ideas-to-Copy-pin-id-1052505375422933587.gif?ex=6a68eb5f&is=6a6799df&hm=013fbaa1f8e97904c5069160e861992c6948b6778068c5c6d0f0f090f17206b3&"
 
 DB_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "bot_licenses.db"
-)  #[cite: 10, 11]
-TOPUP_DB_FILE = "database.json"  #[cite: 11]
-USERDATA_FILE = "userdata.json"  #[cite: 11]
+)
+TOPUP_DB_FILE = "database.json"
+USERDATA_FILE = "userdata.json"
 
-COOLDOWN_TIME = 10  #[cite: 11]
+COOLDOWN_TIME = 10
 ORES_CONFIG = [
     {
         "name": "💎 Diamond",
@@ -75,9 +78,9 @@ ORES_CONFIG = [
         "min_size": 1,
         "max_size": 5,
     },
-]  #[cite: 11]
+]
 
-intents = discord.Intents.all()  #[cite: 11]
+intents = discord.Intents.all()
 
 
 def is_admin_or_has_role(member: discord.Member) -> bool:
@@ -85,7 +88,7 @@ def is_admin_or_has_role(member: discord.Member) -> bool:
     return False
   if member.guild_permissions.administrator:
     return True
-  return any(role.id in ALLOWED_ROLE_IDS for role in member.roles)  #[cite: 11]
+  return any(role.id in ALLOWED_ROLE_IDS for role in member.roles)
 
 
 class MyBot(commands.Bot):
@@ -100,7 +103,7 @@ class MyBot(commands.Bot):
       await self.tree.sync(guild=guild)
       print("Synced Slash Commands to Guild successfully!")
     except Exception as e:
-      print(f"Failed to sync commands: {e}")  #[cite: 11]
+      print(f"Failed to sync commands: {e}")
 
 
 bot = MyBot()
@@ -108,11 +111,10 @@ bot = MyBot()
 license_msg_id = None
 hwid_msg_id = None
 game_panel_msg_id = None
-topup_msg_id = None
-pending_commands = {}  #[cite: 10, 11]
-recent_logs = []  #[cite: 10, 11]
-user_reset_tracker = {}  #[cite: 11]
-scraper = cloudscraper.create_scraper()  #[cite: 11]
+pending_commands = {}
+recent_logs = []
+user_reset_tracker = {}
+scraper = cloudscraper.create_scraper()
 
 
 def init_db():
@@ -134,7 +136,7 @@ def init_db():
   conn.close()
 
 
-init_db()  #[cite: 10, 11]
+init_db()
 
 
 def load_topup_db():
@@ -144,7 +146,7 @@ def load_topup_db():
     with open(TOPUP_DB_FILE, "r", encoding="utf-8") as f:
       return json.load(f)
   except Exception:
-    return {}  #[cite: 11]
+    return {}
 
 
 def save_topup_db(db):
@@ -152,7 +154,7 @@ def save_topup_db(db):
     with open(TOPUP_DB_FILE, "w", encoding="utf-8") as f:
       json.dump(db, f, indent=4, ensure_ascii=False)
   except Exception as e:
-    print(f"Error saving topup db: {e}")  #[cite: 11]
+    print(f"Error saving topup db: {e}")
 
 
 def load_user_data():
@@ -162,7 +164,7 @@ def load_user_data():
         return json.load(f)
     except Exception:
       return {}
-  return {}  #[cite: 11]
+  return {}
 
 
 def save_user_data(data):
@@ -170,10 +172,10 @@ def save_user_data(data):
     with open(USERDATA_FILE, "w", encoding="utf-8") as f:
       json.dump(data, f, indent=2, ensure_ascii=False)
   except Exception as e:
-    print(f"Error saving user data: {e}")  #[cite: 11]
+    print(f"Error saving user data: {e}")
 
 
-user_data = load_user_data()  #[cite: 11]
+user_data = load_user_data()
 
 
 def get_random_ore():
@@ -185,7 +187,7 @@ def get_random_ore():
       size = random.randint(ore["min_size"], ore["max_size"])
       price = size * ore["price_per_size"]
       return {"name": ore["name"], "size": size, "price": price}
-  return None  #[cite: 11]
+  return None
 
 
 def send_log(text):
@@ -194,7 +196,7 @@ def send_log(text):
   if len(recent_logs) > 20:
     recent_logs.pop()
   if LOG_CHANNEL_ID and bot.is_ready():
-    asyncio.run_coroutine_threadsafe(async_send_log(text), bot.loop)  #[cite: 10, 11]
+    asyncio.run_coroutine_threadsafe(async_send_log(text), bot.loop)
 
 
 async def async_send_log(text):
@@ -203,13 +205,14 @@ async def async_send_log(text):
     try:
       await channel.send(text)
     except Exception:
-      pass  #[cite: 10, 11]
+      pass
 
 
 # ==========================================
 # 🌐 [FLASK API สำหรับเชื่อมต่อ Client Toolkit]
 # ==========================================
-app = Flask("Discord Bot")
+
+app = Flask(__name__)
 
 
 @app.route("/verify", methods=["POST"])
@@ -265,57 +268,11 @@ def verify():
     conn.close()
     return jsonify({"status": "error", "message": "License is Paused!"})
 
-  cursor.execute(
-      "SELECT key FROM licenses WHERE hwid = ? AND key != ?", (hwid, key)
-  )
-  other_bound_key = cursor.fetchone()
-  if other_bound_key:
-    conn.close()
-    send_log(
-        f"⚠️ **[Security Alert] HWID พยายามใช้หลายคีย์**\n💻 HWID:"
-        f" `{hwid}`\n🔑 คีย์พยายามสลับ: `{key}` (ผูกกับคีย์"
-        f" `{other_bound_key[0]}` อยู่แล้ว)"
-    )
-    return jsonify(
-        {
-            "status": "error",
-            "message": "This PC is already bound to another key!",
-        }
-    )
-
-  if duration_days == 0:
-    if not reg_hwid:
-      cursor.execute(
-          'UPDATE licenses SET hwid = ?, status = "Active" WHERE key = ?',
-          (hwid, key),
-      )
-      conn.commit()
-      conn.close()
-      send_log(
-          f"🟢 **[Client Log] เปิดใช้งานครั้งแรก (คีย์ถาวร)**\n🔑 คีย์:"
-          f" `{key}`\n💻 HWID: `{hwid}`"
-      )
-      if bot.is_ready():
-        asyncio.run_coroutine_threadsafe(update_dashboards(), bot.loop)
-      return jsonify({"status": "success", "message": "Activated"})
-    elif reg_hwid == hwid:
-      conn.close()
-      send_log(
-          f"💻 **[Client Log] ลูกค้าเปิดโปรแกรม (คีย์ถาวร)**\n🔑 คีย์:"
-          f" `{key}`\n💻 HWID: `{hwid}`"
-      )
-      if bot.is_ready():
-        asyncio.run_coroutine_threadsafe(update_dashboards(), bot.loop)
-      return jsonify({"status": "success", "message": "Welcome back"})
-    else:
-      conn.close()
-      return jsonify(
-          {"status": "error", "message": "Key locked to another PC!"}
-      )
-
   if not reg_hwid or status == "Unused":
-    expiry = now + timedelta(days=duration_days)
-    expiry_str = expiry.strftime("%Y-%m-%d %H:%M:%S")
+    expiry = (
+        now + timedelta(days=duration_days) if duration_days > 0 else None
+    )
+    expiry_str = expiry.strftime("%Y-%m-%d %H:%M:%S") if expiry else None
     cursor.execute(
         "UPDATE licenses SET hwid = ?, expiry_date = ?, status = 'Active' WHERE"
         " key = ?",
@@ -323,10 +280,6 @@ def verify():
     )
     conn.commit()
     conn.close()
-    send_log(
-        f"🟢 **[Client Log] เปิดใช้งานครั้งแรก ({duration_days} วัน)**\n🔑 คีย์:"
-        f" `{key}`\n💻 HWID: `{hwid}`"
-    )
     if bot.is_ready():
       asyncio.run_coroutine_threadsafe(update_dashboards(), bot.loop)
     return jsonify(
@@ -337,20 +290,7 @@ def verify():
     conn.close()
     return jsonify({"status": "error", "message": "HWID Mismatch!"})
 
-  expiry_dt = datetime.strptime(expiry_date, "%Y-%m-%d %H:%M:%S")
-  if now > expiry_dt:
-    cursor.execute('UPDATE licenses SET status = "Expired" WHERE key = ?', (key,))
-    conn.commit()
-    conn.close()
-    if bot.is_ready():
-      asyncio.run_coroutine_threadsafe(update_dashboards(), bot.loop)
-    return jsonify({"status": "error", "message": "License Expired"})
-
   conn.close()
-  send_log(
-      f"💻 **[Client Log] ลูกค้าเปิดโปรแกรมใช้งาน**\n🔑 คีย์: `{key}`\n💻"
-      f" HWID: `{hwid}`"
-  )
   if bot.is_ready():
     asyncio.run_coroutine_threadsafe(update_dashboards(), bot.loop)
   return jsonify({"status": "success", "message": "Active"})
@@ -361,7 +301,7 @@ def run_flask():
 
 
 # ==========================================
-# 💰 [ระบบเติมเงิน TrueMoney ซองอั่งเปา]
+# 💰 [ระบบเติมเงิน]
 # ==========================================
 def create_topup_dashboard_embed(db):
   embed = discord.Embed(
@@ -693,8 +633,79 @@ class GameControlView(discord.ui.View):
     await update_dashboards()
 
 
+async def setup_game_panel():
+  if GAME_CHANNEL_ID == 0:
+    return
+  channel = bot.get_channel(GAME_CHANNEL_ID)
+  if not channel:
+    try:
+      channel = await bot.fetch_channel(GAME_CHANNEL_ID)
+    except Exception:
+      return
+
+  embed = discord.Embed(
+      title="🎮 MINING ADVENTURE & REWARD CENTER",
+      description=(
+          "ยินดีต้อนรับสู่ห้องขุดเหมืองสุดพรีเมียม! ⛏️\nกดปุ่มควบคุมด้านล่างนี้เพื่อ:"
+          " ขุดแร่, ตรวจสอบกระเป๋า, ขายแร่สะสมพ้อยต์ หรือแลกรับ License"
+          " Key ฟรี!\n\n*(หมายเหตุ: คำสั่งและปุ่มเกมทั้งหมดใช้งานได้เฉพาะในห้องนี้เท่านั้น)*"
+      ),
+      color=discord.Color.from_rgb(255, 140, 0),
+  )
+  embed.set_image(url=GIF_BANNER_URL)
+  embed.set_footer(
+      text="System Mini-Game & Economy | Cooldown: 10 Seconds per mine"
+  )
+
+  view = GameControlView()
+  try:
+    async for m in channel.history(limit=5):
+      if m.author == bot.user and m.embeds:
+        if "MINING ADVENTURE" in m.embeds[0].title:
+          await m.edit(embed=embed, view=view)
+          return
+    await channel.send(embed=embed, view=view)
+  except Exception as e:
+    print(f"Error setting up game panel: {e}")
+
+
+@bot.tree.command(name="mining", description="ขุดเหมืองเพื่อหาแร่สะสมพ้อยต์")
+async def mining(interaction: discord.Interaction):
+  if not check_game_channel(interaction):
+    await interaction.response.send_message(
+        f"❌ คำสั่งนี้ใช้งานได้เฉพาะในห้อง <#{GAME_CHANNEL_ID}> เท่านั้น!",
+        ephemeral=True,
+    )
+    return
+  user_id = str(interaction.user.id)
+  now = __import__("time").time()
+  user_data.setdefault(
+      user_id, {"ores": [], "points": 0, "last_mine": 0}
+  )
+  if now - user_data[user_id]["last_mine"] < COOLDOWN_TIME:
+    remaining = int(COOLDOWN_TIME - (now - user_data[user_id]["last_mine"]))
+    await interaction.response.send_message(
+        f"⏳ กรุณารอ `{remaining}` วินาทีก่อนขุดอีกครั้ง", ephemeral=True
+    )
+    return
+  ore = get_random_ore()
+  if not ore:
+    await interaction.response.send_message(
+        "❌ ขุดไม่เจออะไรเลย ลองใหม่อีกครั้ง!", ephemeral=True
+    )
+    return
+  user_data[user_id]["ores"].append(ore)
+  user_data[user_id]["last_mine"] = now
+  save_user_data(user_data)
+  await interaction.response.send_message(
+      f"⛏️ {interaction.user.mention} ขุดพบแร่: **{ore['name']}** (ขนาด"
+      f" `{ore['size']}` | มูลค่า `{ore['price']}` พ้อยต์)",
+      ephemeral=True,
+  )
+
+
 # ==========================================
-# 🎛️ [MODALS & SELECT MENUS สำหรับแอดมิน]
+# 🎛️ [CONTROL ROOM & ADMIN MODALS & VIEWS]
 # ==========================================
 class ResetUserQuotaModal(discord.ui.Modal):
 
@@ -780,17 +791,17 @@ class ControlRoomResetKeyModal(discord.ui.Modal):
 
   def __init__(self):
     super().__init__(title="🔄 รีเซ็ต HWID คีย์ (Control Room)")
+    self.key_input = discord.ui.TextInput(
+        label="พิมพ์ License Key ที่ต้องการรีเซ็ต",
+        placeholder="XXXX-XXXX-XXXX-XXXX",
+        required=True,
+    )
+    self.add_item(self.key_input)
 
-  key_input = discord.ui.TextInput(
-      label="พิมพ์ License Key ที่ต้องการรีเซ็ต",
-      placeholder="XXXX-XXXX-XXXX-XXXX",
-      required=True,
-  )
-
-  async def on_submit(self, interaction: discord.Interaction):
+  async def callback(self, interaction: discord.Interaction):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
-          "❌ เฉพาะแอดมินเท่านั้น", ephemeral=True
+          "❌ เฉพาะแอดมินเท่านั้นที่มีสิทธิ์ใช้งาน", ephemeral=True
       )
       return
     await interaction.response.defer(ephemeral=True)
@@ -801,30 +812,19 @@ class ControlRoomResetKeyModal(discord.ui.Modal):
         "SELECT key, status, hwid FROM licenses WHERE key = ?", (clean_key,)
     )
     row = cursor.fetchone()
-
     if not row:
       conn.close()
       await interaction.followup.send(
           "❌ **ไม่พบคีย์นี้ในระบบ!**", ephemeral=True
       )
       return
-
-    db_key, status, current_hwid = row
-    if not current_hwid:
-      conn.close()
-      await interaction.followup.send(
-          "⚠️ **คีย์นี้ยังไม่เคยถูกใช้งานบนเครื่องใดเลย**", ephemeral=True
-      )
-      return
-
     cursor.execute(
-        "UPDATE licenses SET hwid = NULL, status = 'Unused', expiry_date = NULL,"
-        " paused_days = 0 WHERE key = ?",
+        "UPDATE licenses SET hwid = NULL, status = 'Unused', expiry_date ="
+        " NULL, paused_days = 0 WHERE key = ?",
         (clean_key,),
     )
     conn.commit()
     conn.close()
-
     await interaction.followup.send(
         f"✅ **รีเซ็ต HWID สำเร็จ!**\n🔑 คีย์: `{clean_key}`", ephemeral=True
     )
@@ -839,14 +839,14 @@ class CustomGenModal(discord.ui.Modal):
 
   def __init__(self):
     super().__init__(title="🛠️ สร้าง License Key แบบกำหนดเอง")
+    self.days_input = discord.ui.TextInput(
+        label="ระบุจำนวนวัน (ตัวเลข หรือ perm ถาวร)",
+        placeholder="เช่น 5, 15, 60 หรือ perm",
+        required=True,
+    )
+    self.add_item(self.days_input)
 
-  days_input = discord.ui.TextInput(
-      label="ระบุจำนวนวัน (ตัวเลข หรือ perm ถาวร)",
-      placeholder="เช่น 5, 15, 60 หรือ perm",
-      required=True,
-  )
-
-  async def on_submit(self, interaction: discord.Interaction):
+  async def callback(self, interaction: discord.Interaction):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
           "❌ เฉพาะแอดมินเท่านั้น", ephemeral=True
@@ -858,14 +858,11 @@ class CustomGenModal(discord.ui.Modal):
       d_days = 0 if days_str.lower() == "perm" else int(days_str)
     except ValueError:
       await interaction.followup.send(
-          "❌ กรุณากรอกตัวเลขจำนวนวันให้ถูกต้อง หรือพิมพ์ว่า perm เท่านั้น",
-          ephemeral=True,
+          "❌ กรุณากรอกตัวเลขจำนวนวันให้ถูกต้อง", ephemeral=True
       )
       return
-
     key = "".join(random.choices(string.ascii_uppercase + string.digits, k=16))
     key_formatted = f"{key[0:4]}-{key[4:8]}-{key[8:12]}-{key[12:16]}"
-
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute(
@@ -875,14 +872,10 @@ class CustomGenModal(discord.ui.Modal):
     )
     conn.commit()
     conn.close()
-
     await interaction.followup.send(
         f"✅ สร้างคีย์สำเร็จ: `{key_formatted}` ({days_str} วัน)", ephemeral=True
     )
-    send_log(
-        f"🎛️ แอดมิน `{interaction.user.name}` สร้างคีย์: `{key_formatted}`"
-        f" ({days_str})"
-    )
+    send_log(f"🎛️ แอดมินสร้างคีย์: `{key_formatted}` ({days_str})")
     await update_dashboards()
 
 
@@ -890,42 +883,17 @@ class GenSelectDropdown(discord.ui.Select):
 
   def __init__(self):
     options = [
+        discord.SelectOption(label="📅 1 วัน", value="1"),
+        discord.SelectOption(label="📅 3 วัน", value="3"),
+        discord.SelectOption(label="📅 7 วัน", value="7"),
+        discord.SelectOption(label="📅 30 วัน", value="30"),
+        discord.SelectOption(label="♾️ ถาวร (Permanent)", value="perm"),
         discord.SelectOption(
-            label="📅 1 วัน",
-            description="สร้างคีย์ใช้งานระยะเวลา 1 วัน",
-            value="1",
-        ),
-        discord.SelectOption(
-            label="📅 3 วัน",
-            description="สร้างคีย์ใช้งานระยะเวลา 3 วัน",
-            value="3",
-        ),
-        discord.SelectOption(
-            label="📅 7 วัน",
-            description="สร้างคีย์ใช้งานระยะเวลา 7 วัน",
-            value="7",
-        ),
-        discord.SelectOption(
-            label="📅 30 วัน",
-            description="สร้างคีย์ใช้งานระยะเวลา 30 วัน",
-            value="30",
-        ),
-        discord.SelectOption(
-            label="♾️ ถาวร (Permanent)",
-            description="สร้างคีย์ใช้งานแบบถาวรไม่มีวันหมดอายุ",
-            value="perm",
-        ),
-        discord.SelectOption(
-            label="⌨️ [พิมพ์ระบุจำนวนวันเอง]",
-            description="คลิกเพื่อกรอกตัวเลขวันตามต้องการ",
-            value="CUSTOM_INPUT",
+            label="⌨️ [พิมพ์ระบุจำนวนวันเอง]", value="CUSTOM_INPUT"
         ),
     ]
     super().__init__(
-        placeholder="👉 เลือกจำนวนวันที่ต้องการสร้างคีย์...",
-        min_values=1,
-        max_values=1,
-        options=options,
+        placeholder="👉 เลือกจำนวนวันที่ต้องการสร้างคีย์...", options=options
     )
 
   async def callback(self, interaction: discord.Interaction):
@@ -938,12 +906,10 @@ class GenSelectDropdown(discord.ui.Select):
     if val == "CUSTOM_INPUT":
       await interaction.response.send_modal(CustomGenModal())
       return
-
     await interaction.response.defer(ephemeral=True)
     d_days = 0 if val == "perm" else int(val)
     key = "".join(random.choices(string.ascii_uppercase + string.digits, k=16))
     key_formatted = f"{key[0:4]}-{key[4:8]}-{key[8:12]}-{key[12:16]}"
-
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute(
@@ -953,14 +919,8 @@ class GenSelectDropdown(discord.ui.Select):
     )
     conn.commit()
     conn.close()
-
-    label_text = "ถาวร" if val == "perm" else f"{val} วัน"
     await interaction.followup.send(
-        f"✅ สร้างคีย์สำเร็จ: `{key_formatted}` ({label_text})", ephemeral=True
-    )
-    send_log(
-        f"🎛️ แอดมิน `{interaction.user.name}` สร้างคีย์: `{key_formatted}`"
-        f" ({label_text})"
+        f"✅ สร้างคีย์สำเร็จ: `{key_formatted}`", ephemeral=True
     )
     await update_dashboards()
 
@@ -976,14 +936,14 @@ class CheckKeyModal(discord.ui.Modal):
 
   def __init__(self):
     super().__init__(title="🔍 เช็คข้อมูลคีย์รายตัว")
+    self.key_input = discord.ui.TextInput(
+        label="พิมพ์ License Key",
+        placeholder="XXXX-XXXX-XXXX-XXXX",
+        required=True,
+    )
+    self.add_item(self.key_input)
 
-  key_input = discord.ui.TextInput(
-      label="พิมพ์ License Key ที่ต้องการตรวจสอบ",
-      placeholder="เช่น XXXX-XXXX-XXXX-XXXX",
-      required=True,
-  )
-
-  async def on_submit(self, interaction: discord.Interaction):
+  async def callback(self, interaction: discord.Interaction):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
           "❌ เฉพาะแอดมินเท่านั้น", ephemeral=True
@@ -994,23 +954,19 @@ class CheckKeyModal(discord.ui.Modal):
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT key, duration_days, expiry_date, hwid, status, paused_days FROM"
-        " licenses WHERE key = ?",
+        "SELECT key, duration_days, expiry_date, hwid, status FROM licenses"
+        " WHERE key = ?",
         (target,),
     )
     row = cursor.fetchone()
     conn.close()
-
     if not row:
-      await interaction.followup.send(
-          f"❌ ไม่พบคีย์ `{target}` ในระบบ", ephemeral=True
-      )
+      await interaction.followup.send("❌ ไม่พบคีย์นี้ในระบบ", ephemeral=True)
       return
-
-    k, days, exp, hwid, status, paused = row
+    k, days, exp, hwid, status = row
     text = (
         f"🔑 **รายละเอียดคีย์:** `{k}`\n• สถานะ: `{status}`\n• ระยะเวลา: `{days}`"
-        f" วัน\n• วันหมดอายุ: `{exp or 'ยังไม่เปิดใช้งาน'}`\n• HWID ผูกเครื่อง:"
+        f" วัน\n• วันหมดอายุ: `{exp or 'ยังไม่เปิดใช้งาน'}`\n• HWID:"
         f" `{hwid or 'ยังไม่ผูก'}`"
     )
     await interaction.followup.send(text, ephemeral=True)
@@ -1020,14 +976,12 @@ class CheckHWIDModal(discord.ui.Modal):
 
   def __init__(self):
     super().__init__(title="💻 เช็คข้อมูล HWID")
+    self.hwid_input = discord.ui.TextInput(
+        label="พิมพ์ HWID", placeholder="HWID-...", required=True
+    )
+    self.add_item(self.hwid_input)
 
-  hwid_input = discord.ui.TextInput(
-      label="พิมพ์ HWID ที่ต้องการตรวจสอบ",
-      placeholder="เช่น DESKTOP-XXXXXX",
-      required=True,
-  )
-
-  async def on_submit(self, interaction: discord.Interaction):
+  async def callback(self, interaction: discord.Interaction):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
           "❌ เฉพาะแอดมินเท่านั้น", ephemeral=True
@@ -1038,19 +992,14 @@ class CheckHWIDModal(discord.ui.Modal):
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT key, status, expiry_date FROM licenses WHERE hwid = ?",
-        (target,),
+        "SELECT key, status FROM licenses WHERE hwid = ?", (target,)
     )
     rows = cursor.fetchall()
     conn.close()
-
     if not rows:
-      await interaction.followup.send(
-          f"❌ ไม่พบข้อมูลที่ผูกกับ HWID: `{target}`", ephemeral=True
-      )
+      await interaction.followup.send("❌ ไม่พบข้อมูล HWID นี้", ephemeral=True)
       return
-
-    msg = f"💻 **HWID:** `{target}`\nผูกอยู่กับคีย์:\n"
+    msg = f"💻 **HWID:** `{target}`\nผูกกับคีย์:\n"
     for r in rows:
       msg += f"• คีย์: `{r[0]}` (สถานะ: `{r[1]}`)\n"
     await interaction.followup.send(msg, ephemeral=True)
@@ -1063,17 +1012,12 @@ class SearchInputModal(discord.ui.Modal):
     super().__init__(title="🔍 ค้นหาคีย์ด้วยชื่อหรือตัวอักษร")
     self.search_text = discord.ui.TextInput(
         label="พิมพ์คำที่ต้องการค้นหา",
-        placeholder="เช่น LUCA หรือเว้นว่างเพื่อดูทั้งหมด",
+        placeholder="เช่น คีย์ หรือเว้นว่างเพื่อดูทั้งหมด",
         required=False,
     )
     self.add_item(self.search_text)
 
-  async def on_submit(self, interaction: discord.Interaction):
-    if not is_admin_or_has_role(interaction.user):
-      await interaction.response.send_message(
-          "❌ เฉพาะแอดมินเท่านั้น", ephemeral=True
-      )
-      return
+  async def callback(self, interaction: discord.Interaction):
     keyword = self.search_text.value.strip()
     view = SelectActionView(self.action_type, search_keyword=keyword)
     await interaction.response.send_message(
@@ -1088,12 +1032,12 @@ class KeyPickerModal(discord.ui.Modal):
     super().__init__(title="🎯 เลือกคีย์รายตัว")
     self.key_text = discord.ui.TextInput(
         label="พิมพ์ชื่อคีย์ที่ต้องการจัดการ",
-        placeholder="เช่น LUCA-XXXX-XXXX-XXXX",
+        placeholder="เช่น XXXX-XXXX-XXXX-XXXX",
         required=True,
     )
     self.add_item(self.key_text)
 
-  async def on_submit(self, interaction: discord.Interaction):
+  async def callback(self, interaction: discord.Interaction):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
           "❌ เฉพาะแอดมินเท่านั้น", ephemeral=True
@@ -1105,7 +1049,6 @@ class KeyPickerModal(discord.ui.Modal):
     cursor = conn.cursor()
     cursor.execute("SELECT key FROM licenses WHERE key = ?", (target_key,))
     row = cursor.fetchone()
-
     if not row:
       conn.close()
       await interaction.followup.send(
@@ -1113,12 +1056,6 @@ class KeyPickerModal(discord.ui.Modal):
       )
       return
     conn.close()
-
-    if self.action_type in ["add", "sub"]:
-      await interaction.followup.send(
-          "🔽 กรุณาใช้คำสั่งผ่านเมนูปุ่มกดปกติสำหรับเพิ่ม/ลดวัน", ephemeral=True
-      )
-      return
 
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     cursor = conn.cursor()
@@ -1173,14 +1110,10 @@ class KeyPickerModal(discord.ui.Modal):
         msg = f"⚡ ส่งคำสั่งปิดโปรแกรมไปยังคีย์ `{target_key}` เรียบร้อย!"
       else:
         msg = "❌ ไม่พบ HWID ผูกกับคีย์นี้"
-
     conn.commit()
     conn.close()
     await interaction.followup.send(msg, ephemeral=True)
-    send_log(
-        f"🎛️ แอดมิน `{interaction.user.name}` จัดการ `{self.action_type}`"
-        f" เป้าหมาย: `{target_key}`"
-    )
+    send_log(f"🎛️ แอดมินจัดการ `{self.action_type}` เป้าหมาย: `{target_key}`")
     await update_dashboards()
 
 
@@ -1190,7 +1123,6 @@ class KeySelectDropdown(discord.ui.Select):
     self.action_type = action_type
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     cursor = conn.cursor()
-
     if action_type == "remote_kill":
       cursor.execute("SELECT key, hwid FROM licenses WHERE hwid IS NOT NULL")
     else:
@@ -1208,17 +1140,12 @@ class KeySelectDropdown(discord.ui.Select):
 
     options = [
         discord.SelectOption(
-            label="🔍 [พิมพ์ค้นหาชื่อหรือคีย์...]",
-            description="คลิกเพื่อพิมพ์กรองข้อมูล",
-            value="TRIGGER_SEARCH",
+            label="🔍 [พิมพ์ค้นหาชื่อหรือคีย์...]", value="TRIGGER_SEARCH"
         ),
         discord.SelectOption(
-            label="🎯 [เลือกคีย์รายตัว]",
-            description="คลิกเพื่อพิมพ์ระบุคีย์ที่ต้องการเลือก",
-            value="TRIGGER_PICK_KEY",
+            label="🎯 [เลือกคีย์รายตัว]", value="TRIGGER_PICK_KEY"
         ),
     ]
-
     if rows:
       for r in rows:
         k = r[0]
@@ -1229,26 +1156,18 @@ class KeySelectDropdown(discord.ui.Select):
         )
         options.append(
             discord.SelectOption(
-                label=f"{k}"[:100],
-                description=f"สถานะ: {extra}"[:100],
-                value=k,
+                label=f"{k}"[:100], description=f"สถานะ: {extra}"[:100], value=k
             )
         )
         if len(options) >= 23:
           break
-
     options.append(
         discord.SelectOption(
-            label="⚡ [ALL - เลือกทั้งหมดทุกคีย์]",
-            description="จัดการทุกรายการในระบบพร้อมกัน",
-            value="ALL_ITEMS",
+            label="⚡ [ALL - เลือกทั้งหมดทุกคีย์]", value="ALL_ITEMS"
         )
     )
     super().__init__(
-        placeholder="👉 คลิกเลือกรายการ หรือค้นหา...",
-        min_values=1,
-        max_values=1,
-        options=options,
+        placeholder="👉 คลิกเลือกรายการ หรือค้นหา...", options=options
     )
 
   async def callback(self, interaction: discord.Interaction):
@@ -1297,22 +1216,10 @@ class KeySelectDropdown(discord.ui.Select):
         msg = "⚡ ส่งคำสั่งปิดโปรแกรมไปยังทุกเครื่องเรียบร้อย!"
       else:
         msg = "⚠️ คำสั่งนี้ไม่รองรับการใช้งานแบบ ALL"
-
       conn.commit()
       conn.close()
       await interaction.followup.send(msg, ephemeral=True)
-      send_log(
-          f"🎛️ แอดมิน `{interaction.user.name}` สั่งจัดการทั้งหมด"
-          f" (`{self.action_type} - ALL`)"
-      )
       await update_dashboards()
-      return
-
-    if self.action_type in ["add", "sub"]:
-      conn.close()
-      await interaction.followup.send(
-          "🔽 กรุณาใช้ปุ่มเมนูจัดการรายตัวผ่านหน้าแดชบอร์ดหลัก", ephemeral=True
-      )
       return
 
     if self.action_type == "reset":
@@ -1345,8 +1252,7 @@ class KeySelectDropdown(discord.ui.Select):
         msg = "❌ คีย์ไม่ได้ใช้งานอยู่"
     elif self.action_type == "resume":
       cursor.execute(
-          "SELECT paused_days, status FROM licenses WHERE key = ?",
-          (selected_val,),
+          "SELECT paused_days, status FROM licenses WHERE key = ?", (selected_val,),
       )
       row = cursor.fetchone()
       if row and row[1] == "Paused":
@@ -1371,10 +1277,6 @@ class KeySelectDropdown(discord.ui.Select):
     conn.commit()
     conn.close()
     await interaction.followup.send(msg, ephemeral=True)
-    send_log(
-        f"🎛️ แอดมิน `{interaction.user.name}` จัดการ `{self.action_type}`"
-        f" เป้าหมาย: `{selected_val}`"
-    )
     await update_dashboards()
 
 
@@ -1549,13 +1451,15 @@ class ControlPanelView(discord.ui.View):
           "❌ เฉพาะแอดมินเท่านั้น", ephemeral=True
       )
       return
+
     now = datetime.now()
     embed = discord.Embed(
         title="📊 **รายงานการใช้โควตารีเซ็ต HWID ประจำวัน**",
         color=discord.Color.blue(),
     )
+
     if not user_reset_tracker:
-      embed.description = "📭 **ยังไม่มีผู้ใช้วันนี้ที่มีการใช้โควตา**"
+      embed.description = "📭 **ยังไม่มีผู้ใช้วันนี้ที่มีการใช้นานโควตา**"
     else:
       desc = ""
       for uid, data in user_reset_tracker.items():
@@ -1563,12 +1467,14 @@ class ControlPanelView(discord.ui.View):
           cnt = 0
         else:
           cnt = data["count"]
+
         left = max(0, 2 - cnt)
         desc += (
-            f"• <@{uid}> (`{uid}`)\n  └ 🔄 ใช้ไปแล้ว: `{cnt}/2` รอบ | ⏳"
+            f"• <@{uid}> (`{uid}`)\n  └ 🔄 ใช้ไปแล้ว: `{cnt}/2`รอบ | ⏳"
             f" เหลือ: `{left}` รอบ\n"
         )
       embed.description = desc
+
     await interaction.response.send_message(
         embed=embed, view=QuotaManageView(), ephemeral=True
     )
@@ -1691,178 +1597,44 @@ class ControlPanelView(discord.ui.View):
 
 
 # ==========================================
-# DISCORD SLASH COMMANDS & EVENTS
+# ⚡ [Slash Command สำหรับรีเซ็ต HWID]
 # ==========================================
-@bot.tree.command(name="gen", description="🛠️ สร้าง License Key ใหม่")
-@app_commands.describe(days="ระยะเวลา (เช่น 1, 3, 7, 30 หรือ perm)")
-@app_commands.default_permissions(administrator=True)
-async def slash_gen(interaction: discord.Interaction, days: str):
-  if not is_admin_or_has_role(interaction.user):
-    await interaction.response.send_message(
-        "❌ คุณไม่มีสิทธิ์ใช้งาน", ephemeral=True
-    )
-    return
-
-  await interaction.response.defer(ephemeral=True)
-  key = "".join(random.choices(string.ascii_uppercase + string.digits, k=16))
-  key_formatted = f"{key[0:4]}-{key[4:8]}-{key[8:12]}-{key[12:16]}"
-  d_days = 0 if days.lower() == "perm" else int(days)
-
-  conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-  cursor = conn.cursor()
-  cursor.execute(
-      "INSERT INTO licenses (key, duration_days, expiry_date, hwid, status,"
-      " paused_days) VALUES (?, ?, ?, ?, ?, ?)",
-      (key_formatted, d_days, None, None, "Unused", 0),
-  )
-  conn.commit()
-  conn.close()
-
-  await interaction.followup.send(
-      f"✅ สร้างคีย์สำเร็จ: `{key_formatted}` ({days})", ephemeral=True
-  )
-  send_log(
-      f"⌨️ แอดมิน `{interaction.user.name}` ใช้คำสั่ง `/gen` สร้างคีย์:"
-      f" `{key_formatted}`"
-  )
-  await update_dashboards()
-
-
-@bot.tree.command(name="reset", description="🔄 รีเซ็ต HWID คีย์ (เลือกจากเมนู)")
-@app_commands.default_permissions(administrator=True)
-async def slash_reset(interaction: discord.Interaction):
-  if not is_admin_or_has_role(interaction.user):
-    await interaction.response.send_message(
-        "❌ คุณไม่มีสิทธิ์ใช้งาน", ephemeral=True
-    )
-    return
-  await interaction.response.send_message(
-      "🔽 เลือกเมนูด้านล่าง:", view=SelectActionView("reset"), ephemeral=True
-  )
-
-
 @bot.tree.command(
-    name="add", description="⏰ เพิ่มวันใช้งานให้ License Key (เลือกจากเมนู)"
+    name="reset_hwid", description="รีเซ็ต HWID ของคีย์ตัวเอง (จำกัด 2 รอบต่อวัน)"
 )
-@app_commands.default_permissions(administrator=True)
-async def slash_add(interaction: discord.Interaction):
-  if not is_admin_or_has_role(interaction.user):
+async def reset_hwid(interaction: discord.Interaction, license_key: str):
+  if not is_admin_or_has_role(
+      interaction.user
+  ) and interaction.channel.id != RESET_KEY_CHANNEL_ID:
     await interaction.response.send_message(
-        "❌ คุณไม่มีสิทธิ์ใช้งาน", ephemeral=True
+        f"❌ คำสั่งนี้สามารถใช้งานได้เฉพาะในห้อง <#{RESET_KEY_CHANNEL_ID}>"
+        " เท่านั้น",
+        ephemeral=True,
     )
     return
-  await interaction.response.send_message(
-      "🔽 เลือกเมนูด้านล่าง:", view=SelectActionView("add"), ephemeral=True
-  )
 
+  user_id = interaction.user.id
+  now = datetime.now()
 
-@bot.tree.command(
-    name="sub", description="⏳ ลดวันใช้งาน License Key (เลือกจากเมนู)"
-)
-@app_commands.default_permissions(administrator=True)
-async def slash_sub(interaction: discord.Interaction):
-  if not is_admin_or_has_role(interaction.user):
+  if user_id in user_reset_tracker:
+    if now - user_reset_tracker[user_id]["reset_time"] >= timedelta(days=1):
+      user_reset_tracker[user_id] = {"count": 0, "reset_time": now}
+
+  current_count = user_reset_tracker.get(user_id, {}).get("count", 0)
+  if not is_admin_or_has_role(interaction.user) and current_count >= 2:
+    first_reset_time = user_reset_tracker[user_id]["reset_time"]
+    next_available = first_reset_time + timedelta(days=1)
+    remaining_time = next_available - now
+    hours = int(remaining_time.total_seconds() // 3600)
+    minutes = int((remaining_time.total_seconds() % 3600) // 60)
     await interaction.response.send_message(
-        "❌ คุณไม่มีสิทธิ์ใช้งาน", ephemeral=True
+        f"❌ **คุณใช้สิทธิ์รีเซ็ต HWID ครบ 2 รอบสำหรับวันนี้แล้ว!**\n⏳"
+        f" สามารถรีเซ็ตได้อีกครั้งในอีก `{hours} ชั่วโมง {minutes} นาที`",
+        ephemeral=True,
     )
     return
-  await interaction.response.send_message(
-      "🔽 เลือกเมนูด้านล่าง:", view=SelectActionView("sub"), ephemeral=True
-  )
 
-
-@bot.tree.command(name="pause", description="⏸️ หยุดเวลาคีย์ (เลือกจากเมนู)")
-@app_commands.default_permissions(administrator=True)
-async def slash_pause(interaction: discord.Interaction):
-  if not is_admin_or_has_role(interaction.user):
-    await interaction.response.send_message(
-        "❌ คุณไม่มีสิทธิ์ใช้งาน", ephemeral=True
-    )
-    return
-  await interaction.response.send_message(
-      "🔽 เลือกเมนูด้านล่าง:", view=SelectActionView("pause"), ephemeral=True
-  )
-
-
-@bot.tree.command(
-    name="resume", description="▶️ เดินเวลาคีย์ต่อ (เลือกจากเมนู)"
-)
-@app_commands.default_permissions(administrator=True)
-async def slash_resume(interaction: discord.Interaction):
-  if not is_admin_or_has_role(interaction.user):
-    await interaction.response.send_message(
-        "❌ คุณไม่มีสิทธิ์ใช้งาน", ephemeral=True
-    )
-    return
-  await interaction.response.send_message(
-      "🔽 เลือกเมนูด้านล่าง:", view=SelectActionView("resume"), ephemeral=True
-  )
-
-
-@bot.tree.command(
-    name="kill", description="⚡ สั่งปิดโปรแกรมลูกค้าทันที (เลือกจากเมนู)"
-)
-@app_commands.default_permissions(administrator=True)
-async def slash_kill(interaction: discord.Interaction):
-  if not is_admin_or_has_role(interaction.user):
-    await interaction.response.send_message(
-        "❌ คุณไม่มีสิทธิ์ใช้งาน", ephemeral=True
-    )
-    return
-  await interaction.response.send_message(
-      "🔽 เลือกเมนูด้านล่าง:", view=SelectActionView("remote_kill"), ephemeral=True
-  )
-
-
-@bot.tree.command(name="del", description="🗑️ ลบคีย์ออกจากระบบ (เลือกจากเมนู)")
-@app_commands.default_permissions(administrator=True)
-async def slash_del(interaction: discord.Interaction):
-  if not is_admin_or_has_role(interaction.user):
-    await interaction.response.send_message(
-        "❌ คุณไม่มีสิทธิ์ใช้งาน", ephemeral=True
-    )
-    return
-  await interaction.response.send_message(
-      "🔽 เลือกเมนูด้านล่าง:", view=SelectActionView("delete"), ephemeral=True
-  )
-
-
-@bot.tree.command(
-    name="resetkey",
-    description="🔄 รีเซ็ต HWID คีย์ (Admin ใช้ได้ทุกห้อง / ลูกค้าใช้ได้เฉพาะห้องที่กำหนด)",
-)
-@app_commands.describe(key="กรอก License Key ที่ต้องการรีเซ็ต")
-async def slash_resetkey(interaction: discord.Interaction, key: str):
-  is_admin_user = is_admin_or_has_role(interaction.user)
-  has_customer_role = (
-      any(role.id == CUSTOMER_ROLE_ID for role in interaction.user.roles)
-      if CUSTOMER_ROLE_ID != 0
-      else True
-  )
-
-  if not is_admin_user:
-    if (
-        RESET_KEY_CHANNEL_ID != 0
-        and interaction.channel_id != RESET_KEY_CHANNEL_ID
-    ):
-      await interaction.response.send_message(
-          f"❌ ลูกค้าสามารถใช้งานคำสั่งนี้ได้เฉพาะในห้อง <#{RESET_KEY_CHANNEL_ID}>"
-          " เท่านั้นครับ!",
-          ephemeral=True,
-      )
-      return
-
-    if CUSTOMER_ROLE_ID != 0 and not has_customer_role:
-      await interaction.response.send_message(
-          "❌ คุณไม่มีสิทธิ์ใช้งานคำสั่งนี้"
-          " (สำหรับยศลูกค้าหรือแอดมินเท่านั้น)",
-          ephemeral=True,
-      )
-      return
-
-  await interaction.response.defer(ephemeral=True)
-  clean_key = key.replace("\u200b", "").replace("\ufeff", "").strip()
-
+  clean_key = license_key.strip()
   conn = sqlite3.connect(DB_PATH, check_same_thread=False)
   cursor = conn.cursor()
   cursor.execute(
@@ -1872,43 +1644,10 @@ async def slash_resetkey(interaction: discord.Interaction, key: str):
 
   if not row:
     conn.close()
-    await interaction.followup.send(
-        "❌ **ไม่พบคีย์นี้ในระบบ!** กรุณาตรวจสอบความถูกต้องของ License Key"
-        " อีกครั้ง",
-        ephemeral=True,
+    await interaction.response.send_message(
+        "❌ **ไม่พบคีย์นี้ในระบบ!**", ephemeral=True
     )
     return
-
-  db_key, status, current_hwid = row
-
-  if not current_hwid:
-    conn.close()
-    await interaction.followup.send(
-        "⚠️ **คีย์นี้ยังไม่เคยถูกใช้งานบนเครื่องใดเลย**", ephemeral=True
-    )
-    return
-
-  # ระบบจำกัดโควตาสำหรับลูกค้า
-  if not is_admin_user:
-    user_id = interaction.user.id
-    now = datetime.now()
-    if user_id not in user_reset_tracker:
-      user_reset_tracker[user_id] = {"count": 0, "reset_time": now}
-
-    tracker = user_reset_tracker[user_id]
-    if now - tracker["reset_time"] >= timedelta(days=1):
-      tracker["count"] = 0
-      tracker["reset_time"] = now
-
-    if tracker["count"] >= 2:
-      conn.close()
-      await interaction.followup.send(
-          "❌ **คุณใช้งานโควตารีเซ็ต HWID ครบ 2 ครั้งสำหรับวันนี้แล้ว!**"
-          " กรุณาติดต่อแอดมิน",
-          ephemeral=True,
-      )
-      return
-    tracker["count"] += 1
 
   cursor.execute(
       "UPDATE licenses SET hwid = NULL, status = 'Unused', expiry_date = NULL,"
@@ -1918,35 +1657,155 @@ async def slash_resetkey(interaction: discord.Interaction, key: str):
   conn.commit()
   conn.close()
 
-  await interaction.followup.send(
-      f"✅ **รีเซ็ต HWID สำเร็จ!**\n🔑 คีย์: `{clean_key}`\n💻"
-      " ปลดล็อกฮาร์ดแวร์เรียบร้อยแล้ว"
-      " คุณสามารถนำคีย์นี้ไปใช้งานบนเครื่องใหม่ได้เลยครับ",
+  if not is_admin_or_has_role(interaction.user):
+    if user_id not in user_reset_tracker:
+      user_reset_tracker[user_id] = {"count": 1, "reset_time": now}
+    else:
+      user_reset_tracker[user_id]["count"] += 1
+    used_cnt = user_reset_tracker[user_id]["count"]
+    remaining_quota = 2 - used_cnt
+    quota_text = (
+        f"\n📌 (คุณใช้ไปแล้ว `{used_cnt}/2` รอบ | เหลือสิทธิ์รีเซ็ตอีก"
+        f" `{remaining_quota}` รอบ)"
+    )
+    log_quota = f"ใช้สิทธิ์ไป `{used_cnt}/2` รอบ (เหลือ `{remaining_quota}` รอบ)"
+  else:
+    quota_text = "\n👑 (แอดมินใช้งาน: ไม่จำกัดโควตา)"
+    log_quota = "แอดมินใช้งาน (ไม่จำกัดโควตา)"
+
+  await interaction.response.send_message(
+      f"✅ **รีเซ็ต HWID สำเร็จ!**\n🔑 คีย์: `{clean_key}`{quota_text}",
       ephemeral=True,
   )
 
   send_log(
-      f"🔄 **[Reset Key] {'แอดมิน' if is_admin_user else 'ลูกค้า'}ทำการรีเซ็ตคีย์**\n👤"
-      f" ผู้ใช้งาน: `{interaction.user.name}`\n🔑 คีย์: `{clean_key}`"
+      f"🔄 **[HWID Reset Log]**\n👤 ผู้ใช้งาน: `{interaction.user.name}`"
+      f" ({interaction.user.mention})\n🔑 คีย์ที่รีเซ็ต: `{clean_key}`\n📊"
+      f" สถานะโควตา: {log_quota}"
   )
   await update_dashboards()
 
 
 # ==========================================
-# DISCORD BOT EVENTS & DASHBOARDS
+# 🎫 [ระบบ Button Role]
+# ==========================================
+class RoleButtonView(discord.ui.View):
+
+  def __init__(self, role_id: int):
+    super().__init__(timeout=None)
+    self.role_id = role_id
+
+  @discord.ui.button(
+      label="กดรับยศ",
+      style=discord.ButtonStyle.success,
+      custom_id="get_reaction_role_btn",
+      emoji="🎉",
+  )
+  async def get_role_button(
+      self, interaction: discord.Interaction, button: discord.ui.Button
+  ):
+    guild = interaction.guild
+    member = interaction.user
+    role = guild.get_role(self.role_id)
+
+    if not role:
+      await interaction.response.send_message(
+          "❌ ไม่พบยศนี้ในระบบ กรุณาแจ้งแอดมิน", ephemeral=True
+      )
+      return
+
+    if role in member.roles:
+      try:
+        await member.remove_roles(role, reason="กดปุ่มยกเลิกรับยศ")
+        await interaction.response.send_message(
+            f"❌ คุณได้ทำการถอด {role.mention} ออกเรียบร้อยแล้ว", ephemeral=True
+        )
+      except Exception:
+        await interaction.response.send_message(
+            "❌ บอทไม่สามารถจัดการยศนี้ได้ (ตรวจสอบสิทธิ์ Manage Roles)",
+            ephemeral=True,
+        )
+    else:
+      try:
+        await member.add_roles(role, reason="กดปุ่มรับยศ")
+        await interaction.response.send_message(
+            f"✅ คุณได้รับ {role.mention} เรียบร้อยแล้ว!", ephemeral=True
+        )
+
+        log_channel = guild.get_channel(REACTION_LOG_CHANNEL_ID)
+        if log_channel:
+          embed = discord.Embed(
+              title="**__꒰ 🥲 ꒱ มีผู้รับยศผ่านปุ่ม__**",
+              color=discord.Color.blue(),
+              timestamp=datetime.now(),
+          )
+          if member.display_avatar:
+            embed.set_thumbnail(url=member.display_avatar.url)
+          embed.add_field(
+              name="`ผู้ใช้`", value=f"{member.mention} ({member})", inline=False
+          )
+          embed.add_field(name="`ยศที่ได้รับ`", value=role.mention, inline=True)
+          await log_channel.send(embed=embed)
+      except discord.Forbidden:
+        await interaction.response.send_message(
+            "❌ บอทไม่สามารถให้ยศนี้ได้ (ตรวจสอบสิทธิ์ Manage Roles)",
+            ephemeral=True,
+        )
+
+
+async def setup_button_role_panel():
+  if REACTION_ROLE_CHANNEL_ID == 0 or CUSTOMER_ROLE_ID == 0:
+    return
+  channel = bot.get_channel(REACTION_ROLE_CHANNEL_ID)
+  if not channel:
+    try:
+      channel = await bot.fetch_channel(REACTION_ROLE_CHANNEL_ID)
+    except Exception:
+      return
+
+  embed = discord.Embed(
+      title="✨ ระบบกดรับยศอัตโนมัติ ✨",
+      description=(
+          "กดปุ่มด้านล่างนี้เพื่อรับยศสิทธิ์การใช้งาน / สมาชิกของคุณได้ทันที!"
+      ),
+      color=discord.Color.green(),
+  )
+  embed.set_image(url=GIF_BANNER_URL)
+  embed.set_footer(text="System Auto Role Button")
+
+  view = RoleButtonView(CUSTOMER_ROLE_ID)
+  try:
+    async for m in channel.history(limit=5):
+      if m.author == bot.user and m.embeds:
+        if "ระบบกดรับยศอัตโนมัติ" in m.embeds[0].title:
+          await m.edit(embed=embed, view=view)
+          return
+    await channel.send(embed=embed, view=view)
+  except Exception as e:
+    print(f"Error setting up button role panel: {e}")
+
+
+# ==========================================
+# 🚀 [BOT STARTUP & DASHBOARDS]
 # ==========================================
 @bot.event
 async def on_ready():
-  print(f"Logged in as {bot.user.name}!")
+  print(f"✅ Logged in as {bot.user.name} (ID: {bot.user.id})")
   bot.add_view(ControlPanelView())
   bot.add_view(TopupView(bot))
+  bot.add_view(RoleButtonView(CUSTOMER_ROLE_ID))
   bot.add_view(GameControlView())
+
+  await bot.change_presence(
+      activity=discord.Game(name="Roblox"), status=discord.Status.online
+  )
 
   await setup_control_panel()
   await setup_admin_panel()
-  await setup_topup_dashboard_panel()
+  await setup_button_role_panel()
   await setup_game_panel()
   await update_dashboards()
+  await update_topup_dashboard_panel()
 
 
 async def setup_control_panel():
@@ -1955,7 +1814,6 @@ async def setup_control_panel():
   channel = bot.get_channel(CONTROL_ROOM_CHANNEL_ID)
   if not channel:
     return
-
   embed = discord.Embed(
       title="🎛️ CONTROL ROOM (แผงควบคุมระบบคีย์)",
       description=(
@@ -1965,7 +1823,6 @@ async def setup_control_panel():
       color=discord.Color.from_rgb(138, 43, 226),
   )
   embed.set_image(url=GIF_BANNER_URL)
-
   try:
     async for m in channel.history(limit=5):
       if m.author == bot.user:
@@ -1982,7 +1839,6 @@ async def setup_admin_panel():
   channel = bot.get_channel(ADMIN_CMD_CHANNEL_ID)
   if not channel:
     return
-
   embed = discord.Embed(
       title="⌨️ ADMIN SLASH COMMAND ROOM",
       description=(
@@ -1991,7 +1847,6 @@ async def setup_admin_panel():
       color=discord.Color.from_rgb(255, 215, 0),
   )
   embed.set_image(url=GIF_BANNER_URL)
-
   try:
     async for m in channel.history(limit=5):
       if m.author == bot.user:
@@ -2000,51 +1855,6 @@ async def setup_admin_panel():
     await channel.send(embed=embed)
   except Exception:
     pass
-
-
-async def setup_topup_dashboard_panel():
-  if TOPUP_DASHBOARD_CHANNEL_ID == 0:
-    return
-  channel = bot.get_channel(TOPUP_DASHBOARD_CHANNEL_ID)
-  if not channel:
-    try:
-      channel = await bot.fetch_channel(TOPUP_DASHBOARD_CHANNEL_ID)
-    except Exception:
-      return
-
-  db = load_topup_db()
-  embed = create_topup_dashboard_embed(db)
-  embed.set_image(url=GIF_BANNER_URL)
-  view = TopupView(bot)
-
-  global topup_msg_id
-  try:
-    async for m in channel.history(limit=5):
-      if m.author == bot.user and m.embeds:
-        if "ตารางสถานะและยอดเงินกระเป๋า" in m.embeds[0].title:
-          topup_msg_id = m.id
-          await m.edit(embed=embed, view=view)
-          return
-    msg = await channel.send(embed=embed, view=view)
-    topup_msg_id = msg.id
-  except Exception as e:
-    print(f"Error setup topup dashboard: {e}")
-
-
-async def update_topup_dashboard_panel():
-  if TOPUP_DASHBOARD_CHANNEL_ID == 0 or not topup_msg_id:
-    return
-  channel = bot.get_channel(TOPUP_DASHBOARD_CHANNEL_ID)
-  if not channel:
-    return
-  try:
-    msg = await channel.fetch_message(topup_msg_id)
-    db = load_topup_db()
-    embed = create_topup_dashboard_embed(db)
-    embed.set_image(url=GIF_BANNER_URL)
-    await msg.edit(embed=embed, view=TopupView(bot))
-  except Exception as e:
-    print(f"Error updating topup dashboard: {e}")
 
 
 async def update_dashboards():
@@ -2059,7 +1869,6 @@ async def update_dashboards():
   now = datetime.now()
   current_time_str = now.strftime("%Y-%m-%d %H:%M:%S")
 
-  # 1. อัปเดตห้องแสดงรายการคีย์ (LICENSE_LIST_CHANNEL_ID)
   if LICENSE_LIST_CHANNEL_ID != 0:
     l_channel = bot.get_channel(LICENSE_LIST_CHANNEL_ID)
     if l_channel:
@@ -2080,12 +1889,15 @@ async def update_dashboards():
           elif not expiry_str or status == "Unused":
             t_left = f"⏳ Unused ({days} วัน)"
           else:
-            expiry_dt = datetime.strptime(expiry_str, "%Y-%m-%d %H:%M:%S")
-            rem = expiry_dt - now
-            if rem.total_seconds() <= 0:
-              t_left = "❌ Expired"
-            else:
-              t_left = f"⏱️ เหลือ {rem.days} วัน {rem.seconds // 3600} ชม."
+            try:
+              expiry_dt = datetime.strptime(expiry_str, "%Y-%m-%d %H:%M:%S")
+              rem = expiry_dt - now
+              if rem.total_seconds() <= 0:
+                t_left = "❌ Expired"
+              else:
+                t_left = f"⏱️ เหลือ {rem.days} วัน {rem.seconds // 3600} ชม."
+            except Exception:
+              t_left = "⏱️ Active"
 
           embed_l.add_field(
               name=f"🔑 {key}",
@@ -2118,12 +1930,11 @@ async def update_dashboards():
         except Exception:
           pass
 
-  # 2. อัปเดตห้องแสดงรายการ HWID ที่กำลังเชื่อมต่อ (ACTIVE_HWID_CHANNEL_ID)
   if ACTIVE_HWID_CHANNEL_ID != 0:
     h_channel = bot.get_channel(ACTIVE_HWID_CHANNEL_ID)
     if h_channel:
       embed_h = discord.Embed(
-          title="💻 ACTIVE HWID BINDING TABLE",
+          title="💻 ACTIVE HWID BINDING TABLE (Admin & Customer Only)",
           description=f"🔄 **อัปเดตล่าสุดแบบเรียลไทม์เมื่อ:** `{current_time_str}`",
           color=discord.Color.from_rgb(255, 100, 0),
       )
@@ -2162,7 +1973,101 @@ async def update_dashboards():
           pass
 
 
+async def update_topup_dashboard_panel():
+  if TOPUP_DASHBOARD_CHANNEL_ID == 0:
+    return
+  try:
+    channel = bot.get_channel(TOPUP_DASHBOARD_CHANNEL_ID)
+    if not channel:
+      channel = await bot.fetch_channel(TOPUP_DASHBOARD_CHANNEL_ID)
+    db = load_topup_db()
+    embed = create_topup_dashboard_embed(db)
+    view = TopupView(bot)
+    async for message in channel.history(limit=10):
+      if message.author == bot.user and message.embeds:
+        if "ตารางสถานะและยอดเงินกระเป๋า" in message.embeds[0].title:
+          await message.edit(embed=embed, view=view)
+          return
+    await channel.send(embed=embed, view=view)
+  except Exception as e:
+    print(f"Error updating topup dashboard: {e}")
+
+
+@bot.event
+async def on_message(message):
+  if message.author.bot:
+    return
+
+  if message.channel.id == RESET_KEY_CHANNEL_ID:
+    content = message.content.strip()
+    if len(content) >= 16:
+      user_id = message.author.id
+      now = datetime.now()
+
+      if user_id in user_reset_tracker:
+        if now - user_reset_tracker[user_id]["reset_time"] >= timedelta(days=1):
+          user_reset_tracker[user_id] = {"count": 0, "reset_time": now}
+
+      current_count = user_reset_tracker.get(user_id, {}).get("count", 0)
+      if not is_admin_or_has_role(message.author) and current_count >= 2:
+        await message.reply(
+            "❌ **คุณใช้สิทธิ์รีเซ็ต HWID ครบ 2 รอบสำหรับวันนี้แล้ว!**",
+            delete_after=10,
+        )
+        return
+
+      clean_key = content
+      conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+      cursor = conn.cursor()
+      cursor.execute(
+          "SELECT key, status, hwid FROM licenses WHERE key = ?", (clean_key,)
+      )
+      row = cursor.fetchone()
+      if not row:
+        conn.close()
+        await message.reply("❌ **ไม่พบคีย์นี้ในระบบ!**", delete_after=10)
+        return
+      cursor.execute(
+          "UPDATE licenses SET hwid = NULL, status = 'Unused', expiry_date ="
+          " NULL, paused_days = 0 WHERE key = ?",
+          (clean_key,),
+      )
+      conn.commit()
+      conn.close()
+
+      if not is_admin_or_has_role(message.author):
+        if user_id not in user_reset_tracker:
+          user_reset_tracker[user_id] = {"count": 1, "reset_time": now}
+        else:
+          user_reset_tracker[user_id]["count"] += 1
+        used_cnt = user_reset_tracker[user_id]["count"]
+        rem_quota = 2 - used_cnt
+        log_quota = f"ใช้ไปแล้ว `{used_cnt}/2` รอบ (เหลือ `{rem_quota}` รอบ)"
+      else:
+        log_quota = "แอดมินใช้งาน (ไม่จำกัดโควตา)"
+
+      await message.reply(
+          f"✅ **รีเซ็ต HWID สำเร็จ!**\n🔑 คีย์: `{clean_key}`", delete_after=10
+      )
+
+      send_log(
+          f"🔄 **[Auto Reset Room Log]**\n👤 ผู้ใช้: `{message.author.name}`"
+          f" ({message.author.mention})\n🔑 คีย์: `{clean_key}`\n📊 โควตา:"
+          f" {log_quota}"
+      )
+      await update_dashboards()
+      return
+
+  await bot.process_commands(message)
+
+
 if __name__ == "__main__":
   threading.Thread(target=run_flask, daemon=True).start()
+
   server_on()
-  bot.run("YOUR_DISCORD_BOT_TOKEN_HERE")
+
+  token = os.getenv("TOKEN")
+  if token:
+    bot.run(token)
+  else:
+    print("❌ Error: TOKEN environment variable not found!")
