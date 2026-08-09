@@ -8,6 +8,7 @@ import sqlite3
 import string
 import threading
 from flask import Flask, jsonify, request
+import cloudscraper
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -19,6 +20,10 @@ from myserver import server_on
 
 GUILD_ID = 1448273040961048618  # กำหนด ID เซิร์ฟเวอร์หลัก
 
+PHONE_NUMBER = "0619612338"  # เบอร์ TrueMoney (ซองอั่งเปา)
+PROMPTPAY_NUMBER = "0619612338"  # เบอร์พร้อมเพย์
+TOPUP_DASHBOARD_CHANNEL_ID = 1531619438988890222
+
 CONTROL_ROOM_CHANNEL_ID = 1531353093935993001  # ห้องแผงควบคุมปุ่มแอดมิน
 ADMIN_CMD_CHANNEL_ID = 1448273041963618386  # ห้องพิมพ์คำสั่งเฉพาะแอดมิน
 RESET_KEY_CHANNEL_ID = 1531390970304663602  # ห้องสำหรับให้ลูกค้ารีเซ็ตคีย์ตัวเอง
@@ -28,7 +33,11 @@ LOG_CHANNEL_ID = 1531328859763507280  # ห้องแจ้งเตือน 
 REACTION_LOG_CHANNEL_ID = 1531615505960669235  # ห้องแจ้งคนรับยศผ่านปุ่ม
 REACTION_ROLE_CHANNEL_ID = 1531630494259740814
 
-ALLOWED_ROLE_IDS = [1448273316610838680]  # ยศแอดมิน
+GAME_CHANNEL_ID = 1531651090272227328  # ห้องสำหรับเล่นเกมขุดแร่และแลกคีย์
+
+ALLOWED_ROLE_IDS = [
+    1448273316610838680
+]  # ยศแอดมิน (จัดการระบบหลังบ้านทั้งหมด)
 CUSTOMER_ROLE_ID = 1531392425656848504  # ยศลูกค้า
 
 GIF_BANNER_URL = "https://cdn.discordapp.com/attachments/1531353093935993001/1531357566385389648/From-Klickpin.com-Sleep-Routine-Tips-73-Ideas-to-Copy-pin-id-1052505375422933587.gif?ex=6a68eb5f&is=6a6799df&hm=013fbaa1f8e97904c5069160e861992c6948b6778068c5c6d0f0f090f17206b3&"
@@ -36,6 +45,40 @@ GIF_BANNER_URL = "https://cdn.discordapp.com/attachments/1531353093935993001/153
 DB_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "bot_licenses.db"
 )
+TOPUP_DB_FILE = "database.json"
+USERDATA_FILE = "userdata.json"
+
+COOLDOWN_TIME = 10
+ORES_CONFIG = [
+    {
+        "name": "💎 Diamond",
+        "chance": 0.1,
+        "price_per_size": 100,
+        "min_size": 1,
+        "max_size": 3,
+    },
+    {
+        "name": "💚 Emerald",
+        "chance": 0.2,
+        "price_per_size": 70,
+        "min_size": 1,
+        "max_size": 3,
+    },
+    {
+        "name": "🪙 Gold",
+        "chance": 0.3,
+        "price_per_size": 40,
+        "min_size": 1,
+        "max_size": 4,
+    },
+    {
+        "name": "⚙️ Iron",
+        "chance": 0.4,
+        "price_per_size": 20,
+        "min_size": 1,
+        "max_size": 5,
+    },
+]
 
 intents = discord.Intents.all()
 
@@ -67,9 +110,11 @@ bot = MyBot()
 
 license_msg_id = None
 hwid_msg_id = None
+game_panel_msg_id = None
 pending_commands = {}
-recent_logs = {}
+recent_logs = []
 user_reset_tracker = {}
+scraper = cloudscraper.create_scraper()
 
 
 def init_db():
@@ -94,14 +139,62 @@ def init_db():
 init_db()
 
 
+def load_topup_db():
+  if not os.path.exists(TOPUP_DB_FILE):
+    return {}
+  try:
+    with open(TOPUP_DB_FILE, "r", encoding="utf-8") as f:
+      return json.load(f)
+  except Exception:
+    return {}
+
+
+def save_topup_db(db):
+  try:
+    with open(TOPUP_DB_FILE, "w", encoding="utf-8") as f:
+      json.dump(db, f, indent=4, ensure_ascii=False)
+  except Exception as e:
+    print(f"Error saving topup db: {e}")
+
+
+def load_user_data():
+  if os.path.exists(USERDATA_FILE):
+    try:
+      with open(USERDATA_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+    except Exception:
+      return {}
+  return {}
+
+
+def save_user_data(data):
+  try:
+    with open(USERDATA_FILE, "w", encoding="utf-8") as f:
+      json.dump(data, f, indent=2, ensure_ascii=False)
+  except Exception as e:
+    print(f"Error saving user data: {e}")
+
+
+user_data = load_user_data()
+
+
+def get_random_ore():
+  rand = random.random()
+  cumulative = 0
+  for ore in ORES_CONFIG:
+    cumulative += ore["chance"]
+    if rand < cumulative:
+      size = random.randint(ore["min_size"], ore["max_size"])
+      price = size * ore["price_per_size"]
+      return {"name": ore["name"], "size": size, "price": price}
+  return None
+
+
 def send_log(text):
   global recent_logs
-  recent_logs.setdefault("logs", [])
-  recent_logs["logs"].insert(
-      0, f"[{datetime.now().strftime('%H:%M:%S')}] {text}"
-  )
-  if len(recent_logs["logs"]) > 20:
-    recent_logs["logs"].pop()
+  recent_logs.insert(0, f"[{datetime.now().strftime('%H:%M:%S')}] {text}")
+  if len(recent_logs) > 20:
+    recent_logs.pop()
   if LOG_CHANNEL_ID and bot.is_ready():
     asyncio.run_coroutine_threadsafe(async_send_log(text), bot.loop)
 
@@ -204,8 +297,411 @@ def verify():
 
 
 def run_flask():
-  port = int(os.environ.get("PORT", 5000))  # รองรับพอร์ตอัตโนมัติจาก Render
-  app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
+  app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+
+
+# ==========================================
+# 💰 [ระบบเติมเงิน]
+# ==========================================
+def create_topup_dashboard_embed(db):
+  embed = discord.Embed(
+      title="📊 ตารางสถานะและยอดเงินกระเป๋า (Real-time)",
+      description="ระบบเติมเงินผ่านซองอั่งเปา TrueMoney และพร้อมเพย์อัตโนมัติ",
+      color=0x00FF00,
+  )
+  if not db:
+    embed.add_field(name="สถานะ", value="ยังไม่มีข้อมูลผู้ใช้งานในระบบ", inline=False)
+  else:
+    user_list = []
+    for u_id, data in db.items():
+      points = data.get("point", 0)
+      user_list.append(f"<@{u_id}> ➔ **{points:,.2f} ฿**")
+    chunks = [user_list[i : i + 10] for i in range(0, len(user_list), 10)]
+    for i, chunk in enumerate(chunks):
+      embed.add_field(
+          name=f"รายชื่อสมาชิก (ชุดที่ {i+1})",
+          value="\n".join(chunk),
+          inline=False,
+      )
+  embed.set_footer(
+      text=f"อัปเดตล่าสุดอัตโนมัติ | เบอร์รับซอง: {PHONE_NUMBER}"
+  )
+  return embed
+
+
+class TopupModal(discord.ui.Modal):
+
+  def __init__(self, bot_instance):
+    super().__init__(title="『 เติมเงิน TrueMoney ซองอั่งเปา 』")
+    self.bot_instance = bot_instance
+    self.link = discord.ui.TextInput(
+        label="ลิงก์ซองอั่งเปา",
+        placeholder="https://gift.truemoney.com/campaign/?v=...",
+        required=True,
+    )
+    self.add_item(self.link)
+
+  async def callback(self, interaction: discord.Interaction):
+    link = str(self.link.value).replace(" ", "")
+    if re.match(
+        r"https:\/\/gift\.truemoney\.com\/campaign\/\?v=[a-zA-Z0-9]{18}", link
+    ):
+      hash_v = link.split("?v=")[1]
+      try:
+        res = scraper.post(
+            f"https://gift.truemoney.com/campaign/vouchers/{hash_v}/redeem",
+            json={"mobile": PHONE_NUMBER, "voucher_hash": hash_v},
+            timeout=15,
+        )
+        data = res.json()
+        if (
+            res.status_code == 200
+            and data.get("status", {}).get("code") == "SUCCESS"
+        ):
+          amount = float(data["data"]["my_ticket"]["amount_baht"])
+          db = load_topup_db()
+          u_id = str(interaction.user.id)
+          if u_id not in db:
+            db[u_id] = {"point": 0, "expire_date": "ไม่มี", "role_id": None}
+          db[u_id]["point"] += amount
+          save_topup_db(db)
+          await self.bot_instance.update_topup_dashboard_panel()
+
+          embed = discord.Embed(
+              title="✅ เติมเงินสำเร็จ!",
+              description=(
+                  f"ได้รับยอดเงินเข้ากระเป๋า: `{amount:,.2f}` ฿\nยอดสะสมรวม:"
+                  f" `{db[u_id]['point']:,.2f}` ฿"
+              ),
+              color=discord.Color.green(),
+          )
+          await interaction.response.send_message(embed=embed, ephemeral=True)
+        else:
+          await interaction.response.send_message(
+              "❌ ซองอั่งเปานี้ถูกใช้ไปแล้ว หรือลิงก์ไม่ถูกต้อง", ephemeral=True
+          )
+      except Exception:
+        await interaction.response.send_message(
+            "⚠️ ไม่สามารถติดต่อระบบ TrueMoney ได้ในขณะนี้", ephemeral=True
+        )
+    else:
+      await interaction.response.send_message(
+          "⚠️ รูปแบบลิงก์ซองอั่งเปาไม่ถูกต้อง", ephemeral=True
+      )
+
+
+class TopupView(discord.ui.View):
+
+  def __init__(self, bot_instance):
+    super().__init__(timeout=None)
+    self.bot_instance = bot_instance
+
+  @discord.ui.button(
+      label="เติมเงิน (TrueMoney)",
+      style=discord.ButtonStyle.green,
+      custom_id="topup_receive_btn",
+      emoji="💳",
+  )
+  async def topup_button(
+      self, interaction: discord.Interaction, button: discord.ui.Button
+  ):
+    await interaction.response.send_modal(TopupModal(self.bot_instance))
+
+  @discord.ui.button(
+      label="เช็คยอดเงิน (Admin)",
+      style=discord.ButtonStyle.blurple,
+      custom_id="check_balance_btn",
+      emoji="🏦",
+  )
+  async def check_balance_button(
+      self, interaction: discord.Interaction, button: discord.ui.Button
+  ):
+    if not is_admin_or_has_role(interaction.user):
+      await interaction.response.send_message(
+          "❌ ปุ่มนี้สำหรับแอดมินเท่านั้น", ephemeral=True
+      )
+      return
+    db = load_topup_db()
+    embed = discord.Embed(
+        title="🏦 สรุปยอดเงินสมาชิกทั้งหมดในระบบ", color=discord.Color.gold()
+    )
+    if not db:
+      embed.description = "ยังไม่มีข้อมูลผู้ใช้งานในระบบ"
+    else:
+      desc = ""
+      for u_id, data in db.items():
+        desc += f"<@{u_id}> ➔ `{data.get('point', 0):,.2f}` ฿\n"
+      embed.description = desc
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+# ==========================================
+# 🎮 [ระบบมินิเกมขุดแร่ & แลกคีย์]
+# ==========================================
+def check_game_channel(interaction: discord.Interaction) -> bool:
+  if GAME_CHANNEL_ID != 0 and interaction.channel.id != GAME_CHANNEL_ID:
+    return False
+  return True
+
+
+class GameControlView(discord.ui.View):
+
+  def __init__(self):
+    super().__init__(timeout=None)
+
+  @discord.ui.button(
+      label="⛏️ ขุดเหมือง",
+      style=discord.ButtonStyle.success,
+      custom_id="game_mine_btn",
+  )
+  async def mine_button(
+      self, interaction: discord.Interaction, button: discord.ui.Button
+  ):
+    if not check_game_channel(interaction):
+      await interaction.response.send_message(
+          f"❌ กรุณาเล่นเกมในห้อง <#{GAME_CHANNEL_ID}> เท่านั้น!", ephemeral=True
+      )
+      return
+
+    user_id = str(interaction.user.id)
+    now = __import__("time").time()
+    user_data.setdefault(
+        user_id, {"ores": [], "points": 0, "last_mine": 0}
+    )
+    last_time = user_data[user_id]["last_mine"]
+
+    if now - last_time < COOLDOWN_TIME:
+      remaining = int(COOLDOWN_TIME - (now - last_time))
+      await interaction.response.send_message(
+          f"⏳ กำลังเหนื่อยพักหายใจ... กรุณารออีก `{remaining}` วินาที",
+          ephemeral=True,
+      )
+      return
+
+    ore = get_random_ore()
+    if not ore:
+      await interaction.response.send_message(
+          "❌ ขุดไม่เจออะไรเลย ลองใหม่อีกครั้ง!", ephemeral=True
+      )
+      return
+
+    user_data[user_id]["ores"].append(ore)
+    user_data[user_id]["last_mine"] = now
+    save_user_data(user_data)
+
+    embed = discord.Embed(
+        title="⛏️ ผลการขุดเหมืองสำเร็จ!",
+        description=(
+            f"👤 นักขุด: {interaction.user.mention}\n✨ ขุดพบแร่:"
+            f" **{ore['name']}**\n📦 ขนาด: `{ore['size']}` หน่วย\n💰 มูลค่า:"
+            f" `{ore['price']}` พ้อยต์"
+        ),
+        color=discord.Color.from_rgb(255, 215, 0),
+    )
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+  @discord.ui.button(
+      label="📦 เช็คกระเป๋าแร่",
+      style=discord.ButtonStyle.primary,
+      custom_id="game_check_btn",
+  )
+  async def check_button(
+      self, interaction: discord.Interaction, button: discord.ui.Button
+  ):
+    if not check_game_channel(interaction):
+      await interaction.response.send_message(
+          f"❌ กรุณาใช้ปุ่มนี้ในห้อง <#{GAME_CHANNEL_ID}> เท่านั้น!",
+          ephemeral=True,
+      )
+      return
+
+    user_id = str(interaction.user.id)
+    data = user_data.get(user_id, {"ores": [], "points": 0})
+    ore_lines = "\n".join([
+        f"• {o['name']} (ขนาด {o['size']}) ➔ `{o['price']}` พ้อยต์"
+        for o in data["ores"]
+    ])
+    ore_display = (
+        ore_lines
+        if ore_lines
+        else "📭 กระเป๋าว่างเปล่า (ยังไม่ได้ขุดแร่สะสม)"
+    )
+
+    embed = discord.Embed(
+        title=f"🎒 กระเป๋าแร่ของ {interaction.user.name}",
+        description=f"{ore_display}\n\n💰 **พ้อยต์สะสมทั้งหมด:** `{data['points']}`"
+        " พ้อยต์",
+        color=discord.Color.from_rgb(0, 191, 255),
+    )
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+  @discord.ui.button(
+      label="💸 ขายแร่ทั้งหมด",
+      style=discord.ButtonStyle.danger,
+      custom_id="game_sell_btn",
+  )
+  async def sell_button(
+      self, interaction: discord.Interaction, button: discord.ui.Button
+  ):
+    if not check_game_channel(interaction):
+      await interaction.response.send_message(
+          f"❌ กรุณาใช้ปุ่มนี้ในห้อง <#{GAME_CHANNEL_ID}> เท่านั้น!",
+          ephemeral=True,
+      )
+      return
+
+    user_id = str(interaction.user.id)
+    data = user_data.get(user_id, {"ores": [], "points": 0})
+    if not data["ores"]:
+      await interaction.response.send_message(
+          "❌ คุณไม่มีแร่ในกระเป๋าให้ขาย", ephemeral=True
+      )
+      return
+
+    total = sum(o["price"] for o in data["ores"])
+    data["points"] += total
+    data["ores"] = []
+    save_user_data(user_data)
+
+    embed = discord.Embed(
+        title="💸 ขายแร่สำเร็จ!",
+        description=(
+            f"คุณได้รับพ้อยต์จากการขายแร่รวมทั้งสิ้น: `+{total}`"
+            f" พ้อยต์\n💰 ยอดพ้อยต์คงเหลือ: `{data['points']}` พ้อยต์"
+        ),
+        color=discord.Color.green(),
+    )
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+  @discord.ui.button(
+      label="🎁 แลกคีย์ 1 วัน (300 🪙)",
+      style=discord.ButtonStyle.secondary,
+      custom_id="game_redeem_key_btn",
+  )
+  async def redeem_btn(
+      self, interaction: discord.Interaction, button: discord.ui.Button
+  ):
+    if not check_game_channel(interaction):
+      await interaction.response.send_message(
+          f"❌ กรุณาใช้ปุ่มนี้ในห้อง <#{GAME_CHANNEL_ID}> เท่านั้น!",
+          ephemeral=True,
+      )
+      return
+
+    user_id = str(interaction.user.id)
+    data = user_data.get(user_id, {"ores": [], "points": 0})
+    cost = 300
+
+    if data["points"] < cost:
+      await interaction.response.send_message(
+          f"❌ พ้อยต์ไม่พอ! (ต้องการ `{cost}` พ้อยต์ แต่คุณมี `{data['points']}`"
+          " พ้อยต์)",
+          ephemeral=True,
+      )
+      return
+
+    data["points"] -= cost
+    save_user_data(user_data)
+
+    key = "".join(random.choices(string.ascii_uppercase + string.digits, k=16))
+    key_formatted = f"{key[0:4]}-{key[4:8]}-{key[8:12]}-{key[12:16]}"
+
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO licenses (key, duration_days, expiry_date, hwid, status,"
+        " paused_days) VALUES (?, ?, ?, ?, ?, ?)",
+        (key_formatted, 1, None, None, "Unused", 0),
+    )
+    conn.commit()
+    conn.close()
+
+    embed = discord.Embed(
+        title="🎉 แลกคีย์ใช้งานสำเร็จ!",
+        description=(
+            f"🔑 คีย์ของคุณ: `{key_formatted}`\n⏳ ระยะเวลา: `1 วัน`\n💰"
+            f" พ้อยต์คงเหลือ: `{data['points']}` พ้อยต์"
+        ),
+        color=discord.Color.from_rgb(138, 43, 226),
+    )
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    send_log(
+        f"🎁 **[Game Redeem Log]**\n👤 ผู้ใช้: `{interaction.user.name}`"
+        f" ({interaction.user.mention})\n🔑 แลกคีย์สำเร็จ: `{key_formatted}`"
+    )
+    await update_dashboards()
+
+
+async def setup_game_panel():
+  if GAME_CHANNEL_ID == 0:
+    return
+  channel = bot.get_channel(GAME_CHANNEL_ID)
+  if not channel:
+    try:
+      channel = await bot.fetch_channel(GAME_CHANNEL_ID)
+    except Exception:
+      return
+
+  embed = discord.Embed(
+      title="🎮 MINING ADVENTURE & REWARD CENTER",
+      description=(
+          "ยินดีต้อนรับสู่ห้องขุดเหมืองสุดพรีเมียม! ⛏️\nกดปุ่มควบคุมด้านล่างนี้เพื่อ:"
+          " ขุดแร่, ตรวจสอบกระเป๋า, ขายแร่สะสมพ้อยต์ หรือแลกรับ License"
+          " Key ฟรี!\n\n*(หมายเหตุ: คำสั่งและปุ่มเกมทั้งหมดใช้งานได้เฉพาะในห้องนี้เท่านั้น)*"
+      ),
+      color=discord.Color.from_rgb(255, 140, 0),
+  )
+  embed.set_image(url=GIF_BANNER_URL)
+  embed.set_footer(
+      text="System Mini-Game & Economy | Cooldown: 10 Seconds per mine"
+  )
+
+  view = GameControlView()
+  try:
+    async for m in channel.history(limit=5):
+      if m.author == bot.user and m.embeds:
+        if "MINING ADVENTURE" in m.embeds[0].title:
+          await m.edit(embed=embed, view=view)
+          return
+    await channel.send(embed=embed, view=view)
+  except Exception as e:
+    print(f"Error setting up game panel: {e}")
+
+
+@bot.tree.command(name="mining", description="ขุดเหมืองเพื่อหาแร่สะสมพ้อยต์")
+async def mining(interaction: discord.Interaction):
+  if not check_game_channel(interaction):
+    await interaction.response.send_message(
+        f"❌ คำสั่งนี้ใช้งานได้เฉพาะในห้อง <#{GAME_CHANNEL_ID}> เท่านั้น!",
+        ephemeral=True,
+    )
+    return
+  user_id = str(interaction.user.id)
+  now = __import__("time").time()
+  user_data.setdefault(
+      user_id, {"ores": [], "points": 0, "last_mine": 0}
+  )
+  if now - user_data[user_id]["last_mine"] < COOLDOWN_TIME:
+    remaining = int(COOLDOWN_TIME - (now - user_data[user_id]["last_mine"]))
+    await interaction.response.send_message(
+        f"⏳ กรุณารอ `{remaining}` วินาทีก่อนขุดอีกครั้ง", ephemeral=True
+    )
+    return
+  ore = get_random_ore()
+  if not ore:
+    await interaction.response.send_message(
+        "❌ ขุดไม่เจออะไรเลย ลองใหม่อีกครั้ง!", ephemeral=True
+    )
+    return
+  user_data[user_id]["ores"].append(ore)
+  user_data[user_id]["last_mine"] = now
+  save_user_data(user_data)
+  await interaction.response.send_message(
+      f"⛏️ {interaction.user.mention} ขุดพบแร่: **{ore['name']}** (ขนาด"
+      f" `{ore['size']}` | มูลค่า `{ore['price']}` พ้อยต์)",
+      ephemeral=True,
+  )
 
 
 # ==========================================
@@ -935,9 +1431,8 @@ class ControlPanelView(discord.ui.View):
       )
       return
     log_text = "📜 **Log สำคัญล่าสุด (20 รายการ):**\n"
-    logs_list = recent_logs.get("logs", [])
-    if logs_list:
-      log_text += "\n".join(logs_list[:15])
+    if recent_logs:
+      log_text += "\n".join(recent_logs[:15])
     else:
       log_text += "📭 ยังไม่มีบันทึก Log ในหน่วยความจำ"
     await interaction.response.send_message(log_text, ephemeral=True)
@@ -964,7 +1459,7 @@ class ControlPanelView(discord.ui.View):
     )
 
     if not user_reset_tracker:
-      embed.description = "📭 **ยังไม่มีผู้ใช้วันนี้ที่มีการใช้งานโควตา**"
+      embed.description = "📭 **ยังไม่มีผู้ใช้วันนี้ที่มีการใช้นานโควตา**"
     else:
       desc = ""
       for uid, data in user_reset_tracker.items():
@@ -1297,7 +1792,9 @@ async def setup_button_role_panel():
 async def on_ready():
   print(f"✅ Logged in as {bot.user.name} (ID: {bot.user.id})")
   bot.add_view(ControlPanelView())
+  bot.add_view(TopupView(bot))
   bot.add_view(RoleButtonView(CUSTOMER_ROLE_ID))
+  bot.add_view(GameControlView())
 
   await bot.change_presence(
       activity=discord.Game(name="Roblox"), status=discord.Status.online
@@ -1306,7 +1803,9 @@ async def on_ready():
   await setup_control_panel()
   await setup_admin_panel()
   await setup_button_role_panel()
+  await setup_game_panel()
   await update_dashboards()
+  await update_topup_dashboard_panel()
 
 
 async def setup_control_panel():
@@ -1472,6 +1971,26 @@ async def update_dashboards():
           hwid_msg_id = msg.id
         except Exception:
           pass
+
+
+async def update_topup_dashboard_panel():
+  if TOPUP_DASHBOARD_CHANNEL_ID == 0:
+    return
+  try:
+    channel = bot.get_channel(TOPUP_DASHBOARD_CHANNEL_ID)
+    if not channel:
+      channel = await bot.fetch_channel(TOPUP_DASHBOARD_CHANNEL_ID)
+    db = load_topup_db()
+    embed = create_topup_dashboard_embed(db)
+    view = TopupView(bot)
+    async for message in channel.history(limit=10):
+      if message.author == bot.user and message.embeds:
+        if "ตารางสถานะและยอดเงินกระเป๋า" in message.embeds[0].title:
+          await message.edit(embed=embed, view=view)
+          return
+    await channel.send(embed=embed, view=view)
+  except Exception as e:
+    print(f"Error updating topup dashboard: {e}")
 
 
 @bot.event
