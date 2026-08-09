@@ -41,7 +41,7 @@ ALLOWED_ROLE_IDS = [
 ]  # ยศแอดมิน (จัดการระบบหลังบ้านทั้งหมด)
 CUSTOMER_ROLE_ID = 1531392425656848504  # ยศลูกค้า
 
-GIF_BANNER_URL = "https://cdn.discordapp.com/attachments/1531353093935993001/1531357566385389648/From-Klickpin.com-Sleep-Routine-Tips-73-Ideas-to-Copy-pin-id-1052505375422933587.gif?ex=6a68eb5f&is=6a6799df&hm=013fbaa1f8e97904c5069160e861992c6948b6778068c5c6d0f0f090f17206b3&"
+GIF_BANNER_URL = "https://cdn.discordapp.com/attachments/1535788924885143673/1535809784383799326/standard.gif?ex=6a791dd2&is=6a77cc52&hm=9bfe0b03b3a7880ac9e3d20419230466975e8b55acd99d14d00ae0bbd93f14e3&"
 
 DB_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "bot_licenses.db"
