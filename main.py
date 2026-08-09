@@ -28,8 +28,7 @@ CONTROL_ROOM_CHANNEL_ID = 1531353093935993001  # ห้องแผงควบ�
 ADMIN_CMD_CHANNEL_ID = 1448273041963618386  # ห้องพิมพ์คำสั่งเฉพาะแอดมิน
 RESET_KEY_CHANNEL_ID = 1531390970304663602  # ห้องสำหรับให้ลูกค้ารีเซ็ตคีย์ตัวเอง
 
-# เพิ่มตัวแปรสำหรับห้อง Add HWID แยกต่างหาก (เปลี่ยน ID ตามที่คุณต้องการใช้งานจริง)
-ADD_HWID_CHANNEL_ID = 1535803463252840508  # ⚠️ ตัวอย่าง ID ห้อง Add HWID (เปลี่ยนเป็น ID ห้องของคุณ)
+ADD_HWID_CHANNEL_ID = 1535803463252840508  # ห้อง Add HWID
 
 LICENSE_LIST_CHANNEL_ID = 1531328817765941460  # ห้องแสดงตารางสถานะคีย์
 ACTIVE_HWID_CHANNEL_ID = 1531328835969355878  # ห้องแสดงตาราง HWID ที่ใช้งาน
@@ -39,9 +38,7 @@ REACTION_ROLE_CHANNEL_ID = 1531630494259740814
 
 GAME_CHANNEL_ID = 1535809330081964042  # ห้องสำหรับเล่นเกมขุดแร่และแลกคีย์
 
-ALLOWED_ROLE_IDS = [
-    1533642657413464247
-]  # ยศแอดมิน (จัดการระบบหลังบ้านทั้งหมด)
+ALLOWED_ROLE_IDS = [1533642657413464247]  # ยศแอดมิน
 CUSTOMER_ROLE_ID = 1533641533721546814  # ยศลูกค้า
 
 GIF_BANNER_URL = "https://cdn.discordapp.com/attachments/1535788924885143673/1535809784383799326/standard.gif?ex=6a791dd2&is=6a77cc52&hm=9bfe0b03b3a7880ac9e3d20419230466975e8b55acd99d14d00ae0bbd93f14e3&"
@@ -246,7 +243,7 @@ def verify():
     return jsonify({"status": "success", "message": "Closed logged"})
 
   if action == "poll_command":
-    cmd = pending_commands.pop(hwid, "none")
+    cmd = pending_commands.pop(hwid, "none") if hwid else "none"
     conn.close()
     return jsonify({"status": "success", "command": cmd})
 
@@ -322,6 +319,8 @@ def create_topup_dashboard_embed(db):
       user_list.append(f"<@{u_id}> ➔ **{points:,.2f} ฿**")
     chunks = [user_list[i : i + 10] for i in range(0, len(user_list), 10)]
     for i, chunk in enumerate(chunks):
+      if i >= 25:
+        break
       embed.add_field(
           name=f"รายชื่อสมาชิก (ชุดที่ {i+1})",
           value="\n".join(chunk),
@@ -730,23 +729,18 @@ class ResetUserQuotaModal(discord.ui.Modal):
       return
     try:
       target_id = int(self.user_id_input.value.strip())
-      if target_id in user_reset_tracker:
-        user_reset_tracker[target_id] = {
-            "count": 0,
-            "reset_time": datetime.now(),
-        }
-        await interaction.response.send_message(
-            f"✅ **รีเซ็ตโควตาของ <@{target_id}> สำเร็จแล้ว!**", ephemeral=True
-        )
-        send_log(
-            f"👑 **[Admin Log]** แอดมิน `{interaction.user.name}` ได้ทำการรีเซ็ตโควตาการใช้งานของ"
-            f" <@{target_id}>"
-        )
-      else:
-        await interaction.response.send_message(
-            "❌ สมาชิกคนนี้ยังไม่มีประวัติการใช้งานโควตาในวันนี้",
-            ephemeral=True,
-        )
+      user_reset_tracker[target_id] = {
+          "count": 0,
+          "reset_time": datetime.now(),
+      }
+      await interaction.response.send_message(
+          f"✅ **รีเซ็ต/ตั้งค่าโควตาของ <@{target_id}> สำเร็จแล้ว!**",
+          ephemeral=True,
+      )
+      send_log(
+          f"👑 **[Admin Log]** แอดมิน `{interaction.user.name}` ได้ทำการรีเซ็ตโควตาการใช้งานของ"
+          f" <@{target_id}>"
+      )
     except ValueError:
       await interaction.response.send_message(
           "❌ กรุณากรอก ID เป็นตัวเลขเท่านั้น", ephemeral=True
@@ -1963,7 +1957,7 @@ async def update_dashboards():
       if not rows:
         embed_l.add_field(name="สถานะ", value="📭 ยังไม่มีข้อมูลคีย์", inline=False)
       else:
-        for r in rows:
+        for r in rows[:25]:
           key, days, expiry_str, status, hwid = r
           if status == "Paused":
             t_left = "⏸️ Paused"
@@ -2027,7 +2021,7 @@ async def update_dashboards():
             name="สถานะ", value="📭 ยังไม่มี HWID เชื่อมต่อ", inline=False
         )
       else:
-        for r in active_rows:
+        for r in active_rows[:25]:
           key, days, expiry_str, status, hwid = r
           embed_h.add_field(
               name=f"💻 HWID: {hwid}", value=f"• คีย์ที่ใช้ผูก: `{key}`", inline=False
@@ -2081,7 +2075,6 @@ async def on_message(message):
   if message.author.bot:
     return
 
-  # ห้องสำหรับรีเซ็ตคีย์ (ทำงานเหมือนเดิม)
   if message.channel.id == RESET_KEY_CHANNEL_ID:
     content = message.content.strip()
     if len(content) >= 16:
@@ -2142,7 +2135,6 @@ async def on_message(message):
       await update_dashboards()
       return
 
-  # เพิ่มฟังก์ชันรองรับห้องส่งข้อความ Add HWID แบบแยกห้อง (พิมพ์ Key เว้นวรรคตามด้วย HWID หรือส่งตามรูปแบบที่ต้องการ)
   if message.channel.id == ADD_HWID_CHANNEL_ID:
     parts = message.content.strip().split()
     if len(parts) >= 2:
