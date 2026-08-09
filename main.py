@@ -28,14 +28,15 @@ CONTROL_ROOM_CHANNEL_ID = 1531353093935993001  # ห้องแผงควบ�
 ADMIN_CMD_CHANNEL_ID = 1448273041963618386  # ห้องพิมพ์คำสั่งเฉพาะแอดมิน
 RESET_KEY_CHANNEL_ID = 1531390970304663602  # ห้องสำหรับให้ลูกค้ารีเซ็ตคีย์ตัวเอง
 LICENSE_LIST_CHANNEL_ID = 1531328817765941460  # ห้องแสดงตารางสถานะคีย์
-ACTIVE_HWID_CHANNEL_ID = (
-    1531328835969355878  # ห้องแสดงตาราง HWID ที่ใช้งาน (ดึงจาก Discord)
-)
+ACTIVE_HWID_CHANNEL_ID = 1531328835969355878  # ห้องแสดงตาราง HWID ที่ใช้งาน
 LOG_CHANNEL_ID = 1531328859763507280  # ห้องแจ้งเตือน Log ระบบ
 REACTION_LOG_CHANNEL_ID = 1531615505960669235  # ห้องแจ้งคนรับยศผ่านปุ่ม
 REACTION_ROLE_CHANNEL_ID = 1531630494259740814
 
 GAME_CHANNEL_ID = 1531651090272227328  # ห้องสำหรับเล่นเกมขุดแร่และแลกคีย์
+ADD_HWID_CHANNEL_ID = (
+    1531651090272227329  # ห้องสำหรับกดปุ่ม Add HWID (ป๊อปอัป)
+)
 
 ALLOWED_ROLE_IDS = [
     1448273316610838680
@@ -221,14 +222,13 @@ app = Flask(__name__)
 def verify():
   data = request.json or request.form
   key = data.get("key")
-  # ปรับให้รองรับการดึง HWID เชื่อมโยงกับ Discord ID หรือค่าที่ส่งมาตรงๆ[cite: 21]
-  hwid = data.get("hwid") or data.get("discord_id")
+  hwid = data.get("hwid")
   action = data.get("action", "verify")
 
   if key:
     key = key.replace("\u200b", "").replace("\ufeff", "").strip()
   if hwid:
-    hwid = str(hwid).replace("\u200b", "").replace("\ufeff", "").strip()
+    hwid = hwid.replace("\u200b", "").replace("\ufeff", "").strip()
 
   conn = sqlite3.connect(DB_PATH, check_same_thread=False)
   cursor = conn.cursor()
@@ -237,8 +237,8 @@ def verify():
     cursor.execute("SELECT duration_days FROM licenses WHERE key = ?", (key,))
     conn.close()
     send_log(
-        f"🔴 **[Client Log] ลูกค้าปิดโปรแกรม**\n🔑 คีย์: `{key}`\n💻 HWID"
-        f" (Discord-linked): `{hwid}`"
+        f"🔴 **[Client Log] ลูกค้าปิดโปรแกรม**\n🔑 คีย์: `{key}`\n💻 HWID:"
+        f" `{hwid}`"
     )
     if bot.is_ready():
       asyncio.run_coroutine_threadsafe(update_dashboards(), bot.loop)
@@ -301,6 +301,159 @@ def verify():
 
 def run_flask():
   app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+
+
+# ==========================================
+# 💻 [ระบบ Add HWID ผ่านหน้าต่าง Pop-up บน Discord]
+# ==========================================
+class AddHWIDModal(discord.ui.Modal):
+
+  def __init__(self):
+    super().__init__(title="💻 เพิ่มและผูก HWID กับ License Key")
+    self.key_input = discord.ui.TextInput(
+        label="กรอก License Key ของคุณ",
+        placeholder="XXXX-XXXX-XXXX-XXXX",
+        required=True,
+        max_length=50,
+    )
+    self.hwid_input = discord.ui.TextInput(
+        label="กรอกเลข HWID ของเครื่อง",
+        placeholder="วาง HWID ที่คัดลอกมาจากโปรแกรมที่นี่",
+        required=True,
+    )
+    self.add_item(self.key_input)
+    self.add_item(self.hwid_input)
+
+  async def callback(self, interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+
+    key = self.key_input.value.replace("\u200b", "").strip()
+    hwid = self.hwid_input.value.replace("\u200b", "").strip()
+
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT duration_days, expiry_date, hwid, status FROM licenses WHERE key"
+        " = ?",
+        (key,),
+    )
+    row = cursor.fetchone()
+
+    if not row:
+      conn.close()
+      await interaction.followup.send(
+          "❌ **ไม่พบ License Key นี้ในระบบ!**", ephemeral=True
+      )
+      return
+
+    duration_days, expiry_date, reg_hwid, status = row
+
+    if status == "Paused":
+      conn.close()
+      await interaction.followup.send(
+          "❌ **License นี้ถูกหยุดใช้งานชั่วคราว (Paused)**", ephemeral=True
+      )
+      return
+
+    if reg_hwid and reg_hwid != hwid:
+      conn.close()
+      await interaction.followup.send(
+          (
+              "❌ **คีย์นี้ถูกผูกกับ HWID อื่นไปแล้ว!** หากต้องการเปลี่ยนกรุณาใช้ห้อง"
+              f" <#{RESET_KEY_CHANNEL_ID}>"
+          ),
+          ephemeral=True,
+      )
+      return
+
+    now = datetime.now()
+    expiry = (
+        now + timedelta(days=duration_days) if duration_days > 0 else None
+    )
+    expiry_str = expiry.strftime("%Y-%m-%d %H:%M:%S") if expiry else None
+
+    cursor.execute(
+        "UPDATE licenses SET hwid = ?, expiry_date = ?, status = 'Active' WHERE"
+        " key = ?",
+        (hwid, expiry_str, key),
+    )
+    conn.commit()
+    conn.close()
+
+    if CUSTOMER_ROLE_ID:
+      try:
+        role = interaction.guild.get_role(CUSTOMER_ROLE_ID)
+        if role and role not in interaction.user.roles:
+          await interaction.user.add_roles(
+              role, reason="Add HWID and activated license successfully"
+          )
+      except Exception:
+        pass
+
+    await interaction.followup.send(
+        (
+            f"✅ **ผูก HWID และเปิดใช้งานคีย์สำเร็จ!**\n🔑 คีย์: `{key}`\n💻"
+            f" HWID: `{hwid}`\n⏳ หมดอายุ: `{expiry_str or 'ถาวร (Permanent)'}`"
+        ),
+        ephemeral=True,
+    )
+
+    send_log(
+        f"🔗 **[Add HWID Log]**\n👤 ผู้ใช้: `{interaction.user.name}`"
+        f" ({interaction.user.mention})\n🔑 คีย์: `{key}`\n💻 HWID: `{hwid}`"
+    )
+    await update_dashboards()
+
+
+class AddHWIDButtonView(discord.ui.View):
+
+  def __init__(self):
+    super().__init__(timeout=None)
+
+  @discord.ui.button(
+      label="➕ Add HWID (ผูกคีย์ใช้งาน)",
+      style=discord.ButtonStyle.green,
+      custom_id="open_add_hwid_modal_btn",
+      emoji="🔑",
+  )
+  async def open_modal_button(
+      self, interaction: discord.Interaction, button: discord.ui.Button
+  ):
+    await interaction.response.send_modal(AddHWIDModal())
+
+
+async def setup_add_hwid_panel():
+  if ADD_HWID_CHANNEL_ID == 0:
+    return
+  channel = bot.get_channel(ADD_HWID_CHANNEL_ID)
+  if not channel:
+    try:
+      channel = await bot.fetch_channel(ADD_HWID_CHANNEL_ID)
+    except Exception:
+      return
+
+  embed = discord.Embed(
+      title="🔐 ระบบลงทะเบียนและผูก HWID โปรแกรม",
+      description=(
+          "สำหรับสมาชิกที่ได้รับ License Key แล้ว กดปุ่ม **'➕ Add HWID'"
+          " ด้านล่างนี้\nเพื่อกรอกคีย์และ HWID ของคุณเพื่อเปิดใช้งานโปรแกรมได้ทันที!"
+      ),
+      color=discord.Color.from_rgb(0, 191, 255),
+  )
+  embed.set_image(url=GIF_BANNER_URL)
+  embed.set_footer(text="System Auto Add HWID Panel")
+
+  view = AddHWIDButtonView()
+  try:
+    async for m in channel.history(limit=5):
+      if m.author == bot.user and m.embeds:
+        if "ระบบลงทะเบียนและผูก HWID" in m.embeds[0].title:
+          await m.edit(embed=embed, view=view)
+          return
+    await channel.send(embed=embed, view=view)
+  except Exception as e:
+    print(f"Error setting up add hwid panel: {e}")
 
 
 # ==========================================
@@ -969,7 +1122,7 @@ class CheckKeyModal(discord.ui.Modal):
     k, days, exp, hwid, status = row
     text = (
         f"🔑 **รายละเอียดคีย์:** `{k}`\n• สถานะ: `{status}`\n• ระยะเวลา: `{days}`"
-        f" วัน\n• วันหมดอายุ: `{exp or 'ยังไม่เปิดใช้งาน'}`\n• HWID (Discord-linked):"
+        f" วัน\n• วันหมดอายุ: `{exp or 'ยังไม่เปิดใช้งาน'}`\n• HWID:"
         f" `{hwid or 'ยังไม่ผูก'}`"
     )
     await interaction.followup.send(text, ephemeral=True)
@@ -980,7 +1133,7 @@ class CheckHWIDModal(discord.ui.Modal):
   def __init__(self):
     super().__init__(title="💻 เช็คข้อมูล HWID")
     self.hwid_input = discord.ui.TextInput(
-        label="พิมพ์ HWID / Discord ID", placeholder="HWID-...", required=True
+        label="พิมพ์ HWID", placeholder="HWID-...", required=True
     )
     self.add_item(self.hwid_input)
 
@@ -1002,7 +1155,7 @@ class CheckHWIDModal(discord.ui.Modal):
     if not rows:
       await interaction.followup.send("❌ ไม่พบข้อมูล HWID นี้", ephemeral=True)
       return
-    msg = f"💻 **HWID / Discord ID:** `{target}`\nผูกกับคีย์:\n"
+    msg = f"💻 **HWID:** `{target}`\nผูกกับคีย์:\n"
     for r in rows:
       msg += f"• คีย์: `{r[0]}` (สถานะ: `{r[1]}`)\n"
     await interaction.followup.send(msg, ephemeral=True)
@@ -1412,7 +1565,7 @@ class ControlPanelView(discord.ui.View):
     cursor.execute("SELECT key, hwid FROM licenses WHERE hwid IS NOT NULL")
     rows = cursor.fetchall()
     conn.close()
-    text = "🖥️ **HWID (Discord-linked) ที่เชื่อมต่ออยู่ทั้งหมด:**\n"
+    text = "🖥️ **HWID ที่เชื่อมต่ออยู่ทั้งหมด:**\n"
     for r in rows[:30]:
       text += f"• คีย์ `{r[0]}` ➔ `{r[1]}`\n"
     if not rows:
@@ -1798,6 +1951,7 @@ async def on_ready():
   bot.add_view(TopupView(bot))
   bot.add_view(RoleButtonView(CUSTOMER_ROLE_ID))
   bot.add_view(GameControlView())
+  bot.add_view(AddHWIDButtonView())
 
   await bot.change_presence(
       activity=discord.Game(name="Roblox"), status=discord.Status.online
@@ -1807,6 +1961,7 @@ async def on_ready():
   await setup_admin_panel()
   await setup_button_role_panel()
   await setup_game_panel()
+  await setup_add_hwid_panel()
   await update_dashboards()
   await update_topup_dashboard_panel()
 
@@ -1905,7 +2060,7 @@ async def update_dashboards():
           embed_l.add_field(
               name=f"🔑 {key}",
               value=(
-                  f"• สถานะ: `{status}` | {t_left}\n• HWID (Discord-linked):"
+                  f"• สถานะ: `{status}` | {t_left}\n• HWID:"
                   f" `{hwid or 'ยังไม่ผูก'}`"
               ),
               inline=False,
@@ -1950,9 +2105,7 @@ async def update_dashboards():
         for r in active_rows:
           key, days, expiry_str, status, hwid = r
           embed_h.add_field(
-              name=f"💻 HWID (Discord-linked): {hwid}",
-              value=f"• คีย์ที่ใช้ผูก: `{key}`",
-              inline=False,
+              name=f"💻 HWID: {hwid}", value=f"• คีย์ที่ใช้ผูก: `{key}`", inline=False
           )
 
       embed_h.set_image(url=GIF_BANNER_URL)
