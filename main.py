@@ -1,7 +1,3 @@
-import discord
-from discord.ext import commands
-from discord import app_commands
-from myserver import server_on
 import asyncio
 from datetime import datetime, timedelta
 import json
@@ -11,9 +7,12 @@ import re
 import sqlite3
 import string
 import threading
-import cloudscraper
 from flask import Flask, jsonify, request
-
+import cloudscraper
+import discord
+from discord import app_commands
+from discord.ext import commands
+from myserver import server_on
 
 # ==========================================
 # ⚙️ [ตั้งค่าคอนฟิกหลักและการแยก ID แต่ละห้อง]
@@ -30,6 +29,7 @@ ADMIN_CMD_CHANNEL_ID = 1448273041963618386  # ห้องพิมพ์คำ�
 RESET_KEY_CHANNEL_ID = 1531390970304663602  # ห้องสำหรับให้ลูกค้ารีเซ็ตคีย์ตัวเอง
 LICENSE_LIST_CHANNEL_ID = 1531328817765941460  # ห้องแสดงตารางสถานะคีย์
 ACTIVE_HWID_CHANNEL_ID = 1531328835969355878  # ห้องแสดงตาราง HWID ที่ใช้งาน
+HWID_CHANNEL_ID = 1531328835969355878  # ห้อง @HWID (เพิ่มตามคำขอโดยอ้างอิงจาก Active HWID)
 LOG_CHANNEL_ID = 1531328859763507280  # ห้องแจ้งเตือน Log ระบบ
 REACTION_LOG_CHANNEL_ID = 1531615505960669235  # ห้องแจ้งคนรับยศผ่านปุ่ม
 REACTION_ROLE_CHANNEL_ID = 1531630494259740814
@@ -85,6 +85,8 @@ intents = discord.Intents.all()
 
 
 def is_admin_or_has_role(member: discord.Member) -> bool:
+  if not member:
+    return False
   if member.guild_permissions.administrator:
     return True
   return any(role.id in ALLOWED_ROLE_IDS for role in member.roles)
@@ -141,31 +143,37 @@ init_db()
 def load_topup_db():
   if not os.path.exists(TOPUP_DB_FILE):
     return {}
-  with open(TOPUP_DB_FILE, "r", encoding="utf-8") as f:
-    try:
+  try:
+    with open(TOPUP_DB_FILE, "r", encoding="utf-8") as f:
       return json.load(f)
-    except:
-      return {}
+  except Exception:
+    return {}
 
 
 def save_topup_db(db):
-  with open(TOPUP_DB_FILE, "w", encoding="utf-8") as f:
-    json.dump(db, f, indent=4, ensure_ascii=False)
+  try:
+    with open(TOPUP_DB_FILE, "w", encoding="utf-8") as f:
+      json.dump(db, f, indent=4, ensure_ascii=False)
+  except Exception as e:
+    print(f"Error saving topup db: {e}")
 
 
 def load_user_data():
   if os.path.exists(USERDATA_FILE):
-    with open(USERDATA_FILE, "r", encoding="utf-8") as f:
-      try:
+    try:
+      with open(USERDATA_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
-      except:
-        return {}
+    except Exception:
+      return {}
   return {}
 
 
 def save_user_data(data):
-  with open(USERDATA_FILE, "w", encoding="utf-8") as f:
-    json.dump(data, f, indent=2, ensure_ascii=False)
+  try:
+    with open(USERDATA_FILE, "w", encoding="utf-8") as f:
+      json.dump(data, f, indent=2, ensure_ascii=False)
+  except Exception as e:
+    print(f"Error saving user data: {e}")
 
 
 user_data = load_user_data()
@@ -204,7 +212,8 @@ async def async_send_log(text):
 # ==========================================
 # 🌐 [FLASK API สำหรับเชื่อมต่อ Client Toolkit]
 # ==========================================
-app = Flask("Discord Bot")
+
+app = Flask(__name__)
 
 
 @app.route("/verify", methods=["POST"])
@@ -395,7 +404,7 @@ class TopupView(discord.ui.View):
       emoji="💳",
   )
   async def topup_button(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     await interaction.response.send_modal(TopupModal(self.bot_instance))
 
@@ -406,7 +415,7 @@ class TopupView(discord.ui.View):
       emoji="🏦",
   )
   async def check_balance_button(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -447,7 +456,7 @@ class GameControlView(discord.ui.View):
       custom_id="game_mine_btn",
   )
   async def mine_button(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not check_game_channel(interaction):
       await interaction.response.send_message(
@@ -498,7 +507,7 @@ class GameControlView(discord.ui.View):
       custom_id="game_check_btn",
   )
   async def check_button(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not check_game_channel(interaction):
       await interaction.response.send_message(
@@ -533,7 +542,7 @@ class GameControlView(discord.ui.View):
       custom_id="game_sell_btn",
   )
   async def sell_button(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not check_game_channel(interaction):
       await interaction.response.send_message(
@@ -571,7 +580,7 @@ class GameControlView(discord.ui.View):
       custom_id="game_redeem_key_btn",
   )
   async def redeem_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not check_game_channel(interaction):
       await interaction.response.send_message(
@@ -632,7 +641,7 @@ async def setup_game_panel():
   if not channel:
     try:
       channel = await bot.fetch_channel(GAME_CHANNEL_ID)
-    except:
+    except Exception:
       return
 
   embed = discord.Embed(
@@ -661,7 +670,7 @@ async def setup_game_panel():
     print(f"Error setting up game panel: {e}")
 
 
-@bot.slash_command(name="mining", description="ขุดเหมืองเพื่อหาแร่สะสมพ้อยต์")
+@bot.tree.command(name="mining", description="ขุดเหมืองเพื่อหาแร่สะสมพ้อยต์")
 async def mining(interaction: discord.Interaction):
   if not check_game_channel(interaction):
     await interaction.response.send_message(
@@ -681,6 +690,11 @@ async def mining(interaction: discord.Interaction):
     )
     return
   ore = get_random_ore()
+  if not ore:
+    await interaction.response.send_message(
+        "❌ ขุดไม่เจออะไรเลย ลองใหม่อีกครั้ง!", ephemeral=True
+    )
+    return
   user_data[user_id]["ores"].append(ore)
   user_data[user_id]["last_mine"] = now
   save_user_data(user_data)
@@ -747,7 +761,7 @@ class QuotaManageView(discord.ui.View):
       custom_id="reset_single_quota",
   )
   async def reset_single_quota_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     await interaction.response.send_modal(ResetUserQuotaModal())
 
@@ -757,7 +771,7 @@ class QuotaManageView(discord.ui.View):
       custom_id="reset_all_quota",
   )
   async def reset_all_quota_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -1286,7 +1300,7 @@ class ControlPanelView(discord.ui.View):
       row=0,
   )
   async def refresh_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -1304,7 +1318,7 @@ class ControlPanelView(discord.ui.View):
       row=0,
   )
   async def gen_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -1324,7 +1338,7 @@ class ControlPanelView(discord.ui.View):
       row=0,
   )
   async def check_key_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -1340,7 +1354,7 @@ class ControlPanelView(discord.ui.View):
       row=0,
   )
   async def check_hwid_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -1356,7 +1370,7 @@ class ControlPanelView(discord.ui.View):
       row=1,
   )
   async def check_all_key_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -1383,7 +1397,7 @@ class ControlPanelView(discord.ui.View):
       row=1,
   )
   async def check_all_hwid_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -1410,7 +1424,7 @@ class ControlPanelView(discord.ui.View):
       row=1,
   )
   async def check_log_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -1431,7 +1445,7 @@ class ControlPanelView(discord.ui.View):
       row=2,
   )
   async def quota_status_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -1457,7 +1471,7 @@ class ControlPanelView(discord.ui.View):
 
         left = max(0, 2 - cnt)
         desc += (
-            f"• <@{uid}> (`{uid}`)\n  └ 🔄 ใช้ไปแล้ว: `{cnt}/2` รอบ | ⏳"
+            f"• <@{uid}> (`{uid}`)\n  └ 🔄 ใช้ไปแล้ว: `{cnt}/2`รอบ | ⏳"
             f" เหลือ: `{left}` รอบ\n"
         )
       embed.description = desc
@@ -1473,7 +1487,7 @@ class ControlPanelView(discord.ui.View):
       row=2,
   )
   async def reset_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -1493,7 +1507,7 @@ class ControlPanelView(discord.ui.View):
       row=2,
   )
   async def ctrl_resetkey_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -1509,7 +1523,7 @@ class ControlPanelView(discord.ui.View):
       row=3,
   )
   async def pause_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -1529,7 +1543,7 @@ class ControlPanelView(discord.ui.View):
       row=3,
   )
   async def resume_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -1549,7 +1563,7 @@ class ControlPanelView(discord.ui.View):
       row=3,
   )
   async def kill_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -1569,7 +1583,7 @@ class ControlPanelView(discord.ui.View):
       row=4,
   )
   async def delete_btn(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     if not is_admin_or_has_role(interaction.user):
       await interaction.response.send_message(
@@ -1586,7 +1600,7 @@ class ControlPanelView(discord.ui.View):
 # ==========================================
 # ⚡ [Slash Command สำหรับรีเซ็ต HWID]
 # ==========================================
-@bot.slash_command(
+@bot.tree.command(
     name="reset_hwid", description="รีเซ็ต HWID ของคีย์ตัวเอง (จำกัด 2 รอบต่อวัน)"
 )
 async def reset_hwid(interaction: discord.Interaction, license_key: str):
@@ -1689,7 +1703,7 @@ class RoleButtonView(discord.ui.View):
       emoji="🎉",
   )
   async def get_role_button(
-      self, button: discord.ui.Button, interaction: discord.Interaction
+      self, interaction: discord.Interaction, button: discord.ui.Button
   ):
     guild = interaction.guild
     member = interaction.user
@@ -1702,10 +1716,16 @@ class RoleButtonView(discord.ui.View):
       return
 
     if role in member.roles:
-      await member.remove_roles(role, reason="กดปุ่มยกเลิกรับยศ")
-      await interaction.response.send_message(
-          f"❌ คุณได้ทำการถอด {role.mention} ออกเรียบร้อยแล้ว", ephemeral=True
-      )
+      try:
+        await member.remove_roles(role, reason="กดปุ่มยกเลิกรับยศ")
+        await interaction.response.send_message(
+            f"❌ คุณได้ทำการถอด {role.mention} ออกเรียบร้อยแล้ว", ephemeral=True
+        )
+      except Exception:
+        await interaction.response.send_message(
+            "❌ บอทไม่สามารถจัดการยศนี้ได้ (ตรวจสอบสิทธิ์ Manage Roles)",
+            ephemeral=True,
+        )
     else:
       try:
         await member.add_roles(role, reason="กดปุ่มรับยศ")
@@ -1718,9 +1738,10 @@ class RoleButtonView(discord.ui.View):
           embed = discord.Embed(
               title="**__꒰ 🥲 ꒱ มีผู้รับยศผ่านปุ่ม__**",
               color=discord.Color.blue(),
-              timestamp=datetime.utcnow(),
+              timestamp=datetime.now(),
           )
-          embed.set_thumbnail(url=member.display_avatar.url)
+          if member.display_avatar:
+            embed.set_thumbnail(url=member.display_avatar.url)
           embed.add_field(
               name="`ผู้ใช้`", value=f"{member.mention} ({member})", inline=False
           )
@@ -1740,7 +1761,7 @@ async def setup_button_role_panel():
   if not channel:
     try:
       channel = await bot.fetch_channel(REACTION_ROLE_CHANNEL_ID)
-    except:
+    except Exception:
       return
 
   embed = discord.Embed(
@@ -1869,12 +1890,15 @@ async def update_dashboards():
           elif not expiry_str or status == "Unused":
             t_left = f"⏳ Unused ({days} วัน)"
           else:
-            expiry_dt = datetime.strptime(expiry_str, "%Y-%m-%d %H:%M:%S")
-            rem = expiry_dt - now
-            if rem.total_seconds() <= 0:
-              t_left = "❌ Expired"
-            else:
-              t_left = f"⏱️ เหลือ {rem.days} วัน {rem.seconds // 3600} ชม."
+            try:
+              expiry_dt = datetime.strptime(expiry_str, "%Y-%m-%d %H:%M:%S")
+              rem = expiry_dt - now
+              if rem.total_seconds() <= 0:
+                t_left = "❌ Expired"
+              else:
+                t_left = f"⏱️ เหลือ {rem.days} วัน {rem.seconds // 3600} ชม."
+            except Exception:
+              t_left = "⏱️ Active"
 
           embed_l.add_field(
               name=f"🔑 {key}",
@@ -2042,11 +2066,9 @@ if __name__ == "__main__":
   threading.Thread(target=run_flask, daemon=True).start()
 
   server_on()
-  
-  # จุดที่แก้: เปลี่ยนจาก os.gettenv("TOKEN") เป็น os.getenv("TOKEN") 
-  # และเพิ่มทางเลือกเผื่อใส่ชื่อตัวแปรใน Render ว่า DISCORD_TOKEN
-  token = os.getenv("TOKEN") or os.getenv("DISCORD_TOKEN")
-  if not token:
-    raise ValueError("❌ ไม่พบ Environment Variable ชื่อ 'TOKEN' หรือ 'DISCORD_TOKEN' กรุณาตั้งค่าใน Render Dashboard")
-  
-  bot.run(token)
+
+  token = os.getenv("TOKEN")
+  if token:
+    bot.run(token)
+  else:
+    print("❌ Error: TOKEN environment variable not found!")
