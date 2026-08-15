@@ -20,27 +20,27 @@ from myserver import server_on
 
 GUILD_ID = 1448273040961048618  # กำหนด ID เซิร์ฟเวอร์หลัก
 
-PHONE_NUMBER = "0619612338"  # เบอร์ TrueMoney (ซองอั่งเปา)
-PROMPTPAY_NUMBER = "0619612338"  # เบอร์พร้อมเพย์
+PHONE_NUMBER = ""  # เบอร์ TrueMoney (ซองอั่งเปา)
+PROMPTPAY_NUMBER = ""  # เบอร์พร้อมเพย์
 TOPUP_DASHBOARD_CHANNEL_ID = 1531619438988890222
 
-CONTROL_ROOM_CHANNEL_ID = 1531353093935993001  # ห้องแผงควบคุมปุ่มแอดมิน
+CONTROL_ROOM_CHANNEL_ID = 1537996832981000312  # ห้องแผงควบคุมปุ่มแอดมิน
 ADMIN_CMD_CHANNEL_ID = 1448273041963618386  # ห้องพิมพ์คำสั่งเฉพาะแอดมิน
-RESET_KEY_CHANNEL_ID = 1531390970304663602  # ห้องสำหรับให้ลูกค้ารีเซ็ตคีย์ตัวเอง
+RESET_KEY_CHANNEL_ID =   # ห้องสำหรับให้ลูกค้ารีเซ็ตคีย์ตัวเอง
 LICENSE_LIST_CHANNEL_ID = 1531328817765941460  # ห้องแสดงตารางสถานะคีย์
 ACTIVE_HWID_CHANNEL_ID = 1531328835969355878  # ห้องแสดงตาราง HWID ที่ใช้งาน
 LOG_CHANNEL_ID = 1531328859763507280  # ห้องแจ้งเตือน Log ระบบ
-REACTION_LOG_CHANNEL_ID = 1531615505960669235  # ห้องแจ้งคนรับยศผ่านปุ่ม
-REACTION_ROLE_CHANNEL_ID = 1531630494259740814
+REACTION_LOG_CHANNEL_ID =   # ห้องแจ้งคนรับยศผ่านปุ่ม
+REACTION_ROLE_CHANNEL_ID = 
 
 GAME_CHANNEL_ID = 1531651090272227328  # ห้องสำหรับเล่นเกมขุดแร่และแลกคีย์
 
 ALLOWED_ROLE_IDS = [
-    1448273316610838680
+    1533642657413464247
 ]  # ยศแอดมิน (จัดการระบบหลังบ้านทั้งหมด)
-CUSTOMER_ROLE_ID = 1531392425656848504  # ยศลูกค้า
+CUSTOMER_ROLE_ID = 1533641533721546814  # ยศลูกค้า
 
-GIF_BANNER_URL = "https://cdn.discordapp.com/attachments/1531353093935993001/1531357566385389648/From-Klickpin.com-Sleep-Routine-Tips-73-Ideas-to-Copy-pin-id-1052505375422933587.gif?ex=6a68eb5f&is=6a6799df&hm=013fbaa1f8e97904c5069160e861992c6948b6778068c5c6d0f0f090f17206b3&"
+GIF_BANNER_URL = "https://cdn.discordapp.com/attachments/1448273041963618386/1537794877662826586/standard.gif?ex=6a80ff55&is=6a7fadd5&hm=debb07aa8de30175cbdcc4b74b567627af8f39e823c3f1496f1369388fcec708&"
 
 DB_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "bot_licenses.db"
@@ -574,7 +574,7 @@ class GameControlView(discord.ui.View):
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
   @discord.ui.button(
-      label="🎁 แลกคีย์ 1 วัน (300 🪙)",
+      label="🎁 แลกโปรเเกรมยิงเบอร์ 1 วัน",
       style=discord.ButtonStyle.secondary,
       custom_id="game_redeem_key_btn",
   )
@@ -590,7 +590,7 @@ class GameControlView(discord.ui.View):
 
     user_id = str(interaction.user.id)
     data = user_data.get(user_id, {"ores": [], "points": 0})
-    cost = 300
+    cost = 500
 
     if data["points"] < cost:
       await interaction.response.send_message(
