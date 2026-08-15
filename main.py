@@ -26,12 +26,12 @@ TOPUP_DASHBOARD_CHANNEL_ID = 1531619438988890222
 
 CONTROL_ROOM_CHANNEL_ID = 1537996832981000312  # ห้องแผงควบคุมปุ่มแอดมิน
 ADMIN_CMD_CHANNEL_ID = 1448273041963618386  # ห้องพิมพ์คำสั่งเฉพาะแอดมิน
-RESET_KEY_CHANNEL_ID =   # ห้องสำหรับให้ลูกค้ารีเซ็ตคีย์ตัวเอง
+RESET_KEY_CHANNEL_ID = 0  # ห้องสำหรับให้ลูกค้ารีเซ็ตคีย์ตัวเอง
 LICENSE_LIST_CHANNEL_ID = 1531328817765941460  # ห้องแสดงตารางสถานะคีย์
 ACTIVE_HWID_CHANNEL_ID = 1531328835969355878  # ห้องแสดงตาราง HWID ที่ใช้งาน
 LOG_CHANNEL_ID = 1531328859763507280  # ห้องแจ้งเตือน Log ระบบ
-REACTION_LOG_CHANNEL_ID =   # ห้องแจ้งคนรับยศผ่านปุ่ม
-REACTION_ROLE_CHANNEL_ID = 
+REACTION_LOG_CHANNEL_ID = 0  # ห้องแจ้งคนรับยศผ่านปุ่ม
+REACTION_ROLE_CHANNEL_ID = 0
 
 GAME_CHANNEL_ID = 1531651090272227328  # ห้องสำหรับเล่นเกมขุดแร่และแลกคีย์
 
